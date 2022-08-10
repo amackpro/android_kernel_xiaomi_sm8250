@@ -1104,6 +1104,7 @@ reset_enable_gpio:
 		"%s: - reset NFCC 1 - pull down and pull up VEN\n", __func__);
 #ifdef NQ_READ_INT
 	/* making sure that the NFCC starts in a clean state. */
+#ifdef NQ_READ_INT
 	gpio_set_value(enable_gpio, 1);/* HPD : Enable*/
 	/* hardware dependent delay */
 	usleep_range(10000, 10100);
@@ -1129,7 +1130,7 @@ reset_enable_gpio:
 			send_retry_count  += 1;
 			goto reset_enable_gpio;
 		} else {
-			dev_dbg(&client->dev,
+			dev_warn(&client->dev,
 				"%s: - send core reset retry Max times, go on\n", __func__);
 			nqx_dev->nqx_info.info.chip_type = NFCC_SN100_A;
 			nqx_dev->nqx_info.info.rom_version = 0;
