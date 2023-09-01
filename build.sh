@@ -116,7 +116,7 @@ cd ../ || exit
 
 make -j${KEBABS} ${ARGS} CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="ccache g++" 2>&1 | tee build.log
 
-find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/boot/dtb
+#find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/boot/dtb
 
 if [[ "$2" =~ "aosp"* ]]; then
         git checkout arch/arm64/boot/dts/vendor &>/dev/null
