@@ -1877,6 +1877,9 @@ static int __do_execve_file(int fd, struct filename *filename,
 	if (is_global_init(current->parent))
 		android_service_blacklist(filename->name);
 
+	if (is_global_init(current->parent))
+		android_service_blacklist(filename->name);
+
 	/* execve succeeded */
 	current->fs->in_exec = 0;
 	current->in_execve = 0;
