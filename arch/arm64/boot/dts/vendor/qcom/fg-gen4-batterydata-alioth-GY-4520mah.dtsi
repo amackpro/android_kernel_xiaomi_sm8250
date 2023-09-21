@@ -4,22 +4,12 @@ qcom,04916363_xiaomi_k11_4520mah_averaged_masterslave_nov9th2020 {
 	/* #04916363_Xiaomi_K11_4520mah_averaged_MasterSlave_Nov9th2020*/
 	qcom,max-voltage-uv = <4440000>;
 	qcom,fastchg-current-ma = <5300>;
-	qcom,jeita-fcc-ranges = <(-100)  0   442000
-				1  50  884000
-				51  100  2210000
-				101 150  3536000
-				151 480  6000000
-				481 580  2210000>;
-	qcom,jeita-fv-ranges = <(-100)  0   4450000
-				1   50  4450000
-				51  100  4450000
-				101 150  4450000
-				151 480  4440000
-				481 580  4100000>;
-	qcom,jeita-too-hot = <580>;
-	qcom,jeita-too-cold = <(-100)>;
-	qcom,jeita-warm-th= <480>;
-	qcom,jeita-cool-th= <150>;
+        qcom,jeita-fcc-ranges = <(-100)  50  3536000
+                                51  434  6000000
+                                435 459  2210000>;
+        qcom,jeita-fv-ranges = <0   50  4450000
+                                51  434  4440000
+                                435 459  4100000>;
 	qcom,use-bq-pump;
 	mi,six-pin-battery;
 	qcom,ffc-term-current-ma = <(-666)>;
