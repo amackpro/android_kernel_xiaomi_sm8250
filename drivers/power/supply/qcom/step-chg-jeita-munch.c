@@ -571,54 +571,26 @@ static int get_val(struct range_data *range, int hysteresis, int current_index,
 	}
 	return 0;
 }
-#define TAPERED_STEP_SOC_90		90 /* 90% */
-#define TAPERED_STEP_SOC_80		80 /* 80% */
-#define TAPERED_STEP_SOC_70		70 /* 70% */
-#define TAPERED_STEP_SOC_60		60 /* 60% */
-#define TAPERED_STEP_SOC_FCC_90_67W		4000000 /* 4000ma */
-#define TAPERED_STEP_SOC_FCC_80_67W		5500000 /* 5500ma */
-#define TAPERED_STEP_SOC_FCC_70_67W		8000000 /* 8000ma */
-#define TAPERED_STEP_SOC_FCC_60_67W		10000000 /* 10000ma */
 
-#define TAPERED_STEP_SOC_FCC_90_33W		2000000 /* 2000ma */
-#define TAPERED_STEP_SOC_FCC_80_33W		4000000 /* 4000ma */
-#define TAPERED_STEP_SOC_FCC_70_33W		5500000 /* 5500ma */
-
-#define TAPERED_STEP_CHG_FCC_REDUCTION_STEP_MA		300000 /* 100 mA */
+#define TAPERED_STEP_CHG_FCC_REDUCTION_STEP_MA		200000 /* 200 mA */
 static void taper_fcc_step_chg(struct step_chg_info *chip, int index,
 					int current_voltage)
 {
 	int current_fcc, target_fcc,last_index_fcc;
 	int current_debug;
 	union power_supply_propval pval = {0, };
-	int pps_max_watts = 0;
+
 	if (index < 0) {
 		pr_err("Invalid STEP CHG index\n");
 		return;
 	}
+
 	power_supply_get_property(chip->usb_psy, POWER_SUPPLY_PROP_APDO_MAX, &pval);
-	pps_max_watts = pval.intval;
 	power_supply_get_property(chip->bms_psy, POWER_SUPPLY_PROP_CAPACITY, &pval);
+
 	current_fcc = get_effective_result(chip->fcc_votable);
 	target_fcc = chip->step_chg_config->fcc_cfg[index].value;
 
-	/*if (pps_max_watts >= 40) {// for 67w pd
-		if (pval.intval>= TAPERED_STEP_SOC_90 && target_fcc >= TAPERED_STEP_SOC_FCC_90_67W)
-			target_fcc = TAPERED_STEP_SOC_FCC_90_67W;
-		else if (pval.intval>= TAPERED_STEP_SOC_80 && target_fcc >= TAPERED_STEP_SOC_FCC_80_67W)
-			target_fcc = TAPERED_STEP_SOC_FCC_80_67W;
-		else if (pval.intval>= TAPERED_STEP_SOC_70 && target_fcc >= TAPERED_STEP_SOC_FCC_70_67W)
-			target_fcc = TAPERED_STEP_SOC_FCC_70_67W;
-		else if (pval.intval>= TAPERED_STEP_SOC_60 && target_fcc >= TAPERED_STEP_SOC_FCC_60_67W)
-			target_fcc = TAPERED_STEP_SOC_FCC_60_67W;
-	} else {// for 33w pd
-		if (pval.intval>= TAPERED_STEP_SOC_90 && target_fcc >= TAPERED_STEP_SOC_FCC_90_33W)
-			target_fcc = TAPERED_STEP_SOC_FCC_90_33W;
-		else if (pval.intval>= TAPERED_STEP_SOC_80 && target_fcc >= TAPERED_STEP_SOC_FCC_80_33W)
-			target_fcc = TAPERED_STEP_SOC_FCC_80_33W;
-		else if (pval.intval>= TAPERED_STEP_SOC_70 && target_fcc >= TAPERED_STEP_SOC_FCC_70_33W)
-			target_fcc = TAPERED_STEP_SOC_FCC_70_33W;
-	}*/
 	if (index == 0) {
 		vote(chip->fcc_votable, STEP_CHG_VOTER, true, target_fcc);
 	} else if (current_voltage >
@@ -770,8 +742,8 @@ static int handle_fast_charge(struct step_chg_info *chip, int temp)
 {
 	union power_supply_propval pval = {0, };
 	static bool fast_mode_dis;
-	int rc, dc_present, is_cp_en;
-	int pd_authen;
+	int rc = 0, dc_present = 0, is_cp_en = 0;
+	int pd_authen = 0;
 
 	if (is_dc_wls_available(chip)) {
 		rc = power_supply_get_property(chip->dc_psy,
@@ -942,9 +914,9 @@ static int handle_jeita(struct step_chg_info *chip)
 	if (temp <= JEITA_HYSTERESIS_TEMP_THRED) {
 		chip->jeita_fv_config->param.hysteresis = 5;
 		chip->jeita_fcc_config->param.hysteresis = 5;
-	} else  {
-		chip->jeita_fv_config->param.hysteresis = 18;
-		chip->jeita_fcc_config->param.hysteresis = 18;
+	} else {
+		chip->jeita_fv_config->param.hysteresis = 14;
+		chip->jeita_fcc_config->param.hysteresis = 14;
 	}
 
 	rc = get_val(chip->jeita_fcc_config->fcc_cfg,
