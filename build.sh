@@ -100,7 +100,7 @@ fi
 
 if [[ "$2" =~ "aosp" ]]; then
     if [[ "$1" == "alioth" ]]; then
-        sed -i 's/<1544>/<155>/g' ${dts_source}/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
+        sed -i 's/<1546>/<155>/g' ${dts_source}/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
         sed -i 's/<695>/<70>/g' ${dts_source}/dsi-panel-k11a-38-08-0a-dsc-cmd.dtsi
     fi
     if [[ "$1" == "munch" ]]; then
@@ -116,18 +116,15 @@ cd ../ || exit
 
 make -j${KEBABS} ${ARGS} CC="ccache clang" HOSTCC="ccache gcc" HOSTCXX="ccache g++" 2>&1 | tee build.log
 
-#find ${OUT_DIR}/$dts_source -name '*.dtb' -exec cat {} + >${OUT_DIR}/arch/arm64/boot/dtb
-
 if [[ "$2" =~ "aosp"* ]]; then
         git checkout arch/arm64/boot/dts/vendor &>/dev/null
 fi
 
 #REMOVE KERNELSU NOW
 git checkout drivers/Makefile &>/dev/null
+git checkout drivers/Kconfig &>/dev/null
 rm -rf KernelSU
 rm -rf drivers/kernelsu
-
-git checkout arch/arm64/boot/dts/vendor &>/dev/null
 
 echo "------ Finishing Build ------"
 
