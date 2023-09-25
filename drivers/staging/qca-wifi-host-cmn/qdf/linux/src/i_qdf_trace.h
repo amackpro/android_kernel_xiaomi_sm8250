@@ -258,7 +258,7 @@ static inline void __qdf_trace_hexdump_dummy(QDF_MODULE_ID module,
 #define QDF_TRACE_EXIT(params...) __qdf_trace_noop(params)
 #endif
 
-// #define QDF_ENABLE_TRACING
+#define QDF_ENABLE_TRACING
 #define qdf_scnprintf scnprintf
 
 #ifdef QDF_ENABLE_TRACING
@@ -376,7 +376,7 @@ void __qdf_bug(void);
 #else /* CONFIG_SLUB_DEBUG */
 static inline void __qdf_bug(void)
 {
-	BUG();
+	WARN_ON(1);
 }
 #endif /* CONFIG_SLUB_DEBUG */
 

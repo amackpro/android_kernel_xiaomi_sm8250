@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2012-2021 The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -654,8 +653,8 @@ enum qca_nl80211_vendor_subcmds {
 	QCA_NL80211_VENDOR_SUBCMD_GET_SAR_LIMITS_EVENT = 187,
 	QCA_NL80211_VENDOR_SUBCMD_UPDATE_STA_INFO = 188,
 	QCA_NL80211_VENDOR_SUBCMD_DRIVER_DISCONNECT_REASON = 189,
-	QCA_NL80211_VENDOR_SUBCMD_CONFIG_TWT = 191,
-	QCA_NL80211_VENDOR_SUBCMD_GETBAND = 192,
+        QCA_NL80211_VENDOR_SUBCMD_CONFIG_TWT = 191,
+        QCA_NL80211_VENDOR_SUBCMD_GETBAND = 192,
 };
 
 enum qca_wlan_vendor_tos {
@@ -4428,11 +4427,6 @@ enum qca_wlan_vendor_attr_config {
 	 * will update the RX NSS based on QCA_WLAN_VENDOR_ATTR_CONFIG_RX_NSS.
 	 */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_RX_NSS = 78,
-
-	/* 8-bit unsigned value to set nss and ant mode.
-	 * 1-1x1, 2-2x2
-	 */
-	QCA_WLAN_VENDOR_ATTR_CONFIG_SET_NSS_ANT = 82,
 
 	/* keep last */
 	QCA_WLAN_VENDOR_ATTR_CONFIG_AFTER_LAST,

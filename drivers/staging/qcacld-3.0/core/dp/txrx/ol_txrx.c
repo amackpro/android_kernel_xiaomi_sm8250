@@ -910,8 +910,6 @@ ol_txrx_pdev_attach(ol_txrx_soc_handle soc,
 
 	TAILQ_INIT(&pdev->vdev_list);
 
-	TAILQ_INIT(&pdev->inactive_peer_list);
-
 	TAILQ_INIT(&pdev->req_list);
 	pdev->req_list_depth = 0;
 	qdf_spinlock_create(&pdev->req_list_spinlock);
@@ -1442,15 +1440,6 @@ ol_txrx_pdev_post_attach(struct cdp_soc_t *soc_hdl, uint8_t pdev_id)
 	 */
 	qdf_mem_zero(&pdev->rx_pn[0], sizeof(pdev->rx_pn));
 
-	/* WEP: 24-bit PN */
-	pdev->rx_pn[htt_sec_type_wep40].len =
-		pdev->rx_pn[htt_sec_type_wep104].len =
-			pdev->rx_pn[htt_sec_type_wep128].len = 24;
-
-	pdev->rx_pn[htt_sec_type_wep40].cmp =
-		pdev->rx_pn[htt_sec_type_wep104].cmp =
-			pdev->rx_pn[htt_sec_type_wep128].cmp = ol_rx_pn_cmp24;
-
 	/* TKIP: 48-bit TSC, CCMP: 48-bit PN */
 	pdev->rx_pn[htt_sec_type_tkip].len =
 		pdev->rx_pn[htt_sec_type_tkip_nomic].len =
@@ -1711,7 +1700,6 @@ static void ol_txrx_pdev_pre_detach(struct cdp_soc_t *soc_hdl, uint8_t pdev_id,
 		ol_txrx_dbg("Force delete for pdev %pK\n",
 			   pdev);
 		ol_txrx_peer_find_hash_erase(pdev);
-		ol_txrx_peer_free_inactive_list(pdev);
 	}
 
 	/* to get flow pool status before freeing descs */
@@ -2515,7 +2503,6 @@ ol_txrx_peer_attach(struct cdp_soc_t *soc_hdl, uint8_t vdev_id,
 	qdf_atomic_init(&peer->delete_in_progress);
 	qdf_atomic_init(&peer->flush_in_progress);
 	qdf_atomic_init(&peer->ref_cnt);
-	qdf_atomic_init(&peer->del_ref_cnt);
 
 	for (i = 0; i < PEER_DEBUG_ID_MAX; i++)
 		qdf_atomic_init(&peer->access_list[i]);
@@ -3181,7 +3168,6 @@ int ol_txrx_peer_release_ref(ol_txrx_peer_handle peer,
 	bool ref_silent = true;
 	int access_list = 0;
 	uint32_t err_code = 0;
-	int del_rc;
 
 	/* preconditions */
 	TXRX_ASSERT2(peer);
@@ -3342,12 +3328,10 @@ int ol_txrx_peer_release_ref(ol_txrx_peer_handle peer,
 			qdf_spin_unlock_bh(&pdev->peer_ref_mutex);
 		}
 
-		del_rc = qdf_atomic_read(&peer->del_ref_cnt);
-
-		ol_txrx_info_high("[%d][%d]: Deleting peer %pK ref_cnt -> %d del_ref_cnt -> %d %s",
+		ol_txrx_info_high("[%d][%d]: Deleting peer %pK ref_cnt -> %d %s",
 				  debug_id,
 				  qdf_atomic_read(&peer->access_list[debug_id]),
-				  peer, rc, del_rc,
+				  peer, rc,
 				  qdf_atomic_read(&peer->fw_create_pending) ==
 				  1 ? "(No Maps received)" : "");
 
@@ -3367,8 +3351,7 @@ int ol_txrx_peer_release_ref(ol_txrx_peer_handle peer,
 		    pdev->self_peer == peer)
 			pdev->self_peer = NULL;
 
-		if (!del_rc)
-			qdf_mem_free(peer);
+		qdf_mem_free(peer);
 	} else {
 		access_list = qdf_atomic_read(&peer->access_list[debug_id]);
 		qdf_spin_unlock_bh(&pdev->peer_ref_mutex);

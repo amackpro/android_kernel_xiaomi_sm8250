@@ -285,10 +285,9 @@
 			"gSoftApMaxPeers", \
 			1, \
 			32, \
-			32, \
+			10, \
 			CFG_VALUE_OR_DEFAULT, \
 			"max no of peers")
-
 /*
  * <ini>
  * gMaxOffloadPeers - Set max offload peers

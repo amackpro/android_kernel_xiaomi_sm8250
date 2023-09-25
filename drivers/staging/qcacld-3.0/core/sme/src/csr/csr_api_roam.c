@@ -6935,6 +6935,8 @@ static QDF_STATUS csr_roam_save_params(struct mac_context *mac_ctx,
 					wapi_ie->akm_suite_count * 4);
 				pIeBuf += wapi_ie->akm_suite_count * 4;
 			}
+			sme_debug("wapi_ie->unicast_cipher_suite_count %d",
+				wapi_ie->unicast_cipher_suite_count);
 			qdf_mem_copy(pIeBuf,
 				&wapi_ie->unicast_cipher_suite_count, 2);
 			pIeBuf += 2;
@@ -13633,20 +13635,16 @@ static QDF_STATUS csr_roam_start_wait_for_key_timer(
 {
 	QDF_STATUS status;
 	uint8_t session_id = mac->roam.WaitForKeyTimerInfo.vdev_id;
-#ifdef WLAN_DEBUG
 	tpCsrNeighborRoamControlInfo pNeighborRoamInfo =
 		&mac->roam.neighborRoamInfo[session_id];
-#endif
 
 	if (csr_neighbor_roam_is_handoff_in_progress(mac, session_id)) {
 		/* Disable heartbeat timer when hand-off is in progress */
-#ifdef WLAN_DEBUG
 		sme_debug("disabling HB timer in state: %s sub-state: %s",
 			mac_trace_get_neighbour_roam_state(
 				pNeighborRoamInfo->neighborRoamState),
 			mac_trace_getcsr_roam_sub_state(
 				mac->roam.curSubState[session_id]));
-#endif
 		mac->mlme_cfg->timeouts.heart_beat_threshold = 0;
 	}
 	sme_debug("csrScanStartWaitForKeyTimer");
@@ -16264,7 +16262,6 @@ QDF_STATUS csr_send_join_req_msg(struct mac_context *mac, uint32_t sessionId,
 					       &vendor_ap_search_attr,
 					       ACTION_OUI_SWITCH_TO_11N_MODE);
 		if (mac->roam.configParam.is_force_1x1 &&
-		    mac->lteCoexAntShare &&
 		    is_vendor_ap_present &&
 		    (dot11mode == MLME_DOT11_MODE_ALL ||
 		     dot11mode == MLME_DOT11_MODE_11AC ||
@@ -16395,6 +16392,13 @@ QDF_STATUS csr_send_join_req_msg(struct mac_context *mac, uint32_t sessionId,
 				csr_join_req->rsnIE.length = ieLen;
 				qdf_mem_copy(&csr_join_req->rsnIE.rsnIEdata,
 						 wpaRsnIE, ieLen);
+				sme_debug("csr_join_req->rsnIE.length %d",
+					csr_join_req->rsnIE.length);
+				QDF_TRACE_HEX_DUMP(QDF_MODULE_ID_SME,
+					QDF_TRACE_LEVEL_DEBUG,
+					&csr_join_req->rsnIE.rsnIEdata,
+					csr_join_req->rsnIE.length);
+
 			} else  /* should be WPA/WPA2 otherwise */
 #endif /* FEATURE_WLAN_WAPI */
 			{

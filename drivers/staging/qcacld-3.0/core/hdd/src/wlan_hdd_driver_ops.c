@@ -556,7 +556,6 @@ static int __hdd_soc_probe(struct device *dev,
 	cds_set_driver_loaded(true);
 	cds_set_load_in_progress(false);
 	hdd_start_complete(0);
-
 	hdd_soc_load_unlock(dev);
 
 	return 0;
