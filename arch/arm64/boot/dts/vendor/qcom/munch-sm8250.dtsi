@@ -537,7 +537,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 	status = "ok";
 	qcom,sec-charger-config = <0>;
 	qcom,usb-icl-ua = <6200000>;
-	qcom,fcc-max-ua = <12400000>;
+	qcom,fcc-max-ua = <11000000>;
 	qcom,fv-max-uv = <4480000>;
 	qcom,non-fcc-fv-max-uv = <4450000>;
 	qcom,dc-icl-ua = <1000000>;
@@ -546,8 +546,8 @@ And public attribution of xiaomi platforms(like L11R and so and)
 	qcom,chg-term-current-ma = <(-200)>;
 	qcom,step-charging-enable;
 	qcom,sw-jeita-enable;
-	qcom,chg-warm-th= <480>;
-	qcom,chg-cool-th= <150>;
+	qcom,chg-warm-th= <439>;
+	qcom,chg-cool-th= <50>;
 	//qcom,suspend-input-on-debug-batt;
 	pinctrl-names = "default", "smb5_active", "smb5_suspend";
 	pinctrl-0 = <&vbus_disable_suspend>;
@@ -582,13 +582,14 @@ And public attribution of xiaomi platforms(like L11R and so and)
 			"vph_voltage",
 			"conn_temp",
 			"chg_temp";
-	qcom,thermal-mitigation = <3000000 2800000 2600000 2400000 2200000 2100000 2000000
-				   1800000 1600000 1500000 1400000 1200000 1000000 900000
-				   800000 500000>;
+	qcom,thermal-mitigation
+				= <4000000 3700000 3600000 35000000 3400000 3300000 3200000
+				   3000000 2800000 2500000 23000000 2200000 2100000 1800000
+				   900000 750000>;
 	qcom,thermal-mitigation-icl
-				= <2800000 2700000 2600000 2400000 2200000 2100000 2000000
-				   1800000 1600000 1500000 1400000 1300000 1200000 1100000
-				   950000 750000>;
+                                = <4000000 3700000 3600000 35000000 3400000 3300000 3200000
+                                   3000000 2800000 2500000 23000000 2200000 2100000 1800000
+                                   100000 750000>;
 	qcom,thermal-mitigation-dcp
 				= <1800000 1800000 1800000 1800000 1800000 1800000 1800000
 				   1800000 1800000 1700000 1600000 1400000 1200000 1100000
@@ -598,9 +599,9 @@ And public attribution of xiaomi platforms(like L11R and so and)
 				   1300000 1150000 1100000 1000000 900000 850000 750000
 				   650000 500000>;
 	qcom,thermal-fcc-qc3-normal
-				= <3200000 3000000 2800000 2600000 2500000 2400000 2300000
-				   2200000 2100000 1800000 1600000 1400000 1200000 1000000
-				   750000 750000>;
+				= <4500000 4300000 4100000 3800000 3500000 3200000 3000000
+                                   2700000 2500000 2400000 2200000 2000000 1800000 1500000
+                                   1000000 750000>;
 	qcom,thermal-fcc-qc3-cp
 				= <4800000 4600000 4400000 4200000 4000000 3800000 3600000
 				   3400000 3000000 2600000 2400000 2200000 2000000 1300000
@@ -614,7 +615,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 				   1600000 1600000 1400000 1200000 1100000 1050000 1000000
 				   950000 500000>;
 	qcom,thermal-fcc-pps-bq
-				= <12400000 11000000 10000000 8800000 8000000 7500000 7000000
+				= <11000000 10500000 10000000 8800000 8400000 7800000 7200000
 				   6500000 6000000 5500000 5000000 4000000 2650000 2000000
 				   1000000 500000>;
 };
@@ -640,7 +641,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 		mi,qc3-bat-curr-max = <3600>;
 		mi,qc3-bus-volt-max = <12000>;
 		mi,qc3-bus-curr-max = <2100>;
-		mi,qc3-battery-warm-th = <480>;
+		mi,qc3-battery-warm-th = <439>;
 		mi,cp-sec-enable;
 		mi,support-qc3p5-without-smb;
 	};
@@ -649,7 +650,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 		compatible = "xiaomi,usbpd-pm";
 		status = "ok";
 		mi,pd-bat-volt-max = <4480>;
-		mi,pd-bat-curr-max = <12400>;
+		mi,pd-bat-curr-max = <11000>;
 		mi,pd-bus-volt-max = <12000>;
 		mi,pd-bus-curr-max = <6200>;
 		mi,pd-non-ffc-bat-volt-max = <4450>;
@@ -657,7 +658,7 @@ And public attribution of xiaomi platforms(like L11R and so and)
 		mi,step-charge-high-vol-curr-max = <4400>;
 		mi,cell-vol-high-threshold-mv = <4500>;
 		mi,cell-vol-max-threshold-mv = <4480>;
-		mi,pd-battery-warm-th = <480>;
+		mi,pd-battery-warm-th = <439>;
 		mi,cp-sec-enable;
 	};
 
