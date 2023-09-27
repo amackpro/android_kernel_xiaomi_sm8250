@@ -834,6 +834,7 @@ static void dwc3_remove_requests(struct dwc3 *dwc, struct dwc3_ep *dep)
 {
 	int retries = 40;
 	struct dwc3_request		*req;
+	int ret;
 
 	dbg_log_string("START for %s(%d)", dep->name, dep->number);
 
@@ -3449,13 +3450,13 @@ int dwc3_stop_active_transfer(struct dwc3 *dwc, u32 epnum, bool force,
 	struct dwc3_ep *dep;
 	struct dwc3_gadget_ep_cmd_params params;
 	u32 cmd;
-	int ret;
+	int ret=0;
 
 	dep = dwc->eps[epnum];
 
 	if ((dep->flags & DWC3_EP_END_TRANSFER_PENDING) ||
 	    !dep->resource_index)
-		return;
+		return ret;
 
 	if (dep->endpoint.endless)
 		dwc3_notify_event(dwc, DWC3_CONTROLLER_NOTIFY_DISABLE_UPDXFER,
@@ -3508,6 +3509,7 @@ int dwc3_stop_active_transfer(struct dwc3 *dwc, u32 epnum, bool force,
 	}
 	dbg_log_string("%s(%d): endxfer ret:%d)",
 			dep->name, dep->number, ret);
+	return ret;
 }
 
 int dwc3_stop_active_transfer_noioc(struct dwc3 *dwc, u32 epnum, bool force)
