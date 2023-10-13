@@ -1802,7 +1802,7 @@ static const struct dev_pm_ops fts_dev_pm_ops = {
 };
 #endif
 
-static void fts_update_gesture_state(struct fts_ts_data *ts_data, int bit, bool enable)
+void fts_update_gesture_state(struct fts_ts_data *ts_data, int bit, bool enable)
 {
         u8 cmd_shift = 0;
 
