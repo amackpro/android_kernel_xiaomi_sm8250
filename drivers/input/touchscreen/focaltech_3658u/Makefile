@@ -1,5 +1,5 @@
 obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_3658U)	+= focaltech_touch.o
-focaltech_touch-y	:= focaltech_core.o
+focaltech_touch-y	:= focaltech_core.o \
 			   focaltech_ex_fun.o \
 			   focaltech_ex_mode.o \
 		 	   focaltech_gesture.o \
