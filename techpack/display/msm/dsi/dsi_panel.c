@@ -40,7 +40,10 @@
 #define MIN_PREFILL_LINES      35
 
 extern struct frame_stat fm_stat;
+
+#ifdef CONFIG_FOD_DEVICE
 extern void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value);
+#endif
 
 enum dsi_dsc_ratio_type {
 	DSC_8BPC_8BPP,
@@ -728,9 +731,10 @@ int dsi_panel_update_backlight(struct dsi_panel *panel,
 			mi_cfg->dim_fp_dbv_max_in_hbm_flag = false;
 			DSI_INFO("set DSI_CMD_SET_MI_DIM_FP_DBV_MAX to normal\n");
 		}
-		if(panel->mi_cfg.local_hbm_cur_status) {
+#ifdef CONFIG_FOD_DEVICE
+		if(panel->mi_cfg.local_hbm_cur_status)
 			mi_dsi_panel_set_fod_brightness(dsi, bl_lvl);
-		}
+#endif
 	}
 
 	if (rc < 0)
@@ -4908,7 +4912,9 @@ int dsi_panel_enable(struct dsi_panel *panel)
 {
 	int rc = 0;
 	struct dsi_panel_mi_cfg *mi_cfg;
+#ifdef CONFIG_FOD_DEVICE
 	struct dsi_display *display = NULL;
+#endif
 	struct mipi_dsi_host *host = NULL;
 
 	if (!panel) {
@@ -4957,6 +4963,7 @@ int dsi_panel_enable(struct dsi_panel *panel)
 				panel->name, rc);
 	}
 
+#ifdef CONFIG_FOD_DEVICE
 	host = panel->host;
 	if (host && mi_cfg->fod_hbm_enabled) {
 		display = container_of(host, struct dsi_display, host);
@@ -4967,6 +4974,7 @@ int dsi_panel_enable(struct dsi_panel *panel)
 	mi_cfg->fod_hbm_enabled = false;
 	mi_cfg->fod_hbm_layer_enabled = false;
 	mi_cfg->fod_backlight_flag = false;
+#endif
 	mi_cfg->in_aod = false;
 	mi_cfg->dimming_state = STATE_NONE;
 	mi_cfg->doze_brightness_state = DOZE_TO_NORMAL;
@@ -5095,7 +5103,9 @@ int dsi_panel_disable(struct dsi_panel *panel)
 {
 	int rc = 0;
 	struct dsi_panel_mi_cfg *mi_cfg;
+#ifdef CONFIG_FOD_DEVICE
 	struct dsi_display *display = NULL;
+#endif
 	struct mipi_dsi_host *host = NULL;
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
@@ -5173,25 +5183,32 @@ int dsi_panel_disable(struct dsi_panel *panel)
 	panel->panel_initialized = false;
 	panel->power_mode = SDE_MODE_DPMS_OFF;
 
+#ifdef CONFIG_FOD_DEVICE
 	host = panel->host;
 	if (host && mi_cfg->fod_hbm_enabled) {
 		display = container_of(host, struct dsi_display, host);
 		sde_crtc_fod_ui_ready(display, 1, 0);
 	}
-
+#endif
 	mi_cfg->hbm_enabled = false;
+#ifdef CONFIG_FOD_DEVICE
 	mi_cfg->fod_hbm_enabled = false;
 	mi_cfg->fod_hbm_layer_enabled = false;
 	mi_cfg->fod_backlight_flag = false;
+#endif
 	mi_cfg->in_aod = false;
 	mi_cfg->dimming_state = STATE_NONE;
 	mi_cfg->doze_brightness_state = DOZE_TO_NORMAL;
 	mi_cfg->into_aod_pending = false;
+#ifdef CONFIG_FOD_DEVICE
 	mi_cfg->layer_fod_unlock_success = false;
 	mi_cfg->sysfs_fod_unlock_success = false;
+#endif
 	mi_cfg->gir_enabled = false;
 	mi_cfg->request_gir_status = false;
+#ifdef CONFIG_FOD_DEVICE
 	mi_cfg->local_hbm_cur_status = false;
+#endif
 	if (mi_cfg->dc_type)
 		mi_cfg->dc_enable = false;
 

@@ -24,7 +24,9 @@
 #include "dsi_display.h"
 #include "dsi_panel_mi.h"
 #include "clone_cooling_device.h"
+#ifdef CONFIG_FOD_DEVICE
 #include "mi_disp_lhbm.h"
+#endif
 
 #define BL_NODE_NAME_SIZE 32
 #define HDR10_PLUS_VSIF_TYPE_CODE      0x81
@@ -785,6 +787,7 @@ struct sde_connector_dyn_hdr_metadata *sde_connector_get_dyn_hdr_meta(
 	return &c_state->dyn_hdr_meta;
 }
 
+#ifdef CONFIG_FOD_DEVICE
 void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value)
 {
 	if (!display)
@@ -823,6 +826,7 @@ void sde_crtc_fod_ui_ready(struct dsi_display *display, int type, int value)
 	SDE_INFO("fod_ui_ready notify=%d", display->panel->mi_cfg.fod_ui_ready);
 	sysfs_notify(&display->drm_conn->kdev->kobj, NULL, "fod_ui_ready");
 }
+#endif
 
 int mi_sde_connector_gir_fence(struct drm_connector *connector)
 {
@@ -872,6 +876,7 @@ int mi_sde_connector_gir_fence(struct drm_connector *connector)
 	return rc;
 }
 
+#ifdef CONFIG_FOD_DEVICE
 static int _sde_connector_mi_dimlayer_hbm_fence(struct drm_connector *connector)
 {
 	int rc = 0;
@@ -1102,6 +1107,7 @@ void sde_connector_fod_notify(struct drm_connector *conn)
 	}
 	last_hbm_state = hbm_state;
 }
+#endif
 
 int sde_connector_pre_kickoff(struct drm_connector *connector)
 {
@@ -1150,9 +1156,10 @@ int sde_connector_pre_kickoff(struct drm_connector *connector)
 
 	mi_sde_connector_gir_fence(connector);
 
+#ifdef CONFIG_FOD_DEVICE
 	/* fingerprint hbm fence */
 	_sde_connector_mi_dimlayer_hbm_fence(connector);
-
+#endif
 	rc = c_conn->ops.pre_kickoff(connector, c_conn->display, &params);
 
 	if (c_conn->connector_type == DRM_MODE_CONNECTOR_DSI)
@@ -1257,9 +1264,11 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 				MSM_ENC_TX_COMPLETE);
 	c_conn->allow_bl_update = true;
 
+#ifdef CONFIG_FOD_DEVICE
 	if (display->panel->mi_cfg.pending_lhbm_state) {
 		mi_disp_set_fod_queue_work(1, false);
 	}
+#endif
 
 	if (c_conn->bl_device) {
 		c_conn->bl_device->props.power = FB_BLANK_UNBLANK;
@@ -3360,6 +3369,7 @@ int sde_connector_event_notify(struct drm_connector *connector, uint32_t type,
 	return ret;
 }
 
+#ifdef CONFIG_FOD_DEVICE
 int sde_connector_hbm_ctl(struct drm_connector *connector, uint32_t op_code)
 {
 	int ret = 0;
@@ -3377,6 +3387,7 @@ int sde_connector_pre_hbm_ctl(struct drm_connector *connector)
 	ret = dsi_display_hbm_set_disp_param(connector, DISPPARAM_HBM_BACKLIGHT_RESEND);
 	return ret;
 }
+#endif
 
 #define to_dsi_bridge(x)     container_of((x), struct dsi_bridge, base)
 

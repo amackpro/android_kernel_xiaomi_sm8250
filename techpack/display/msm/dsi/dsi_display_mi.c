@@ -333,6 +333,7 @@ ssize_t dsi_display_print_gamma_param(struct drm_connector *connector, char *buf
 
 }
 
+#ifdef CONFIG_FOD_DEVICE
 int dsi_display_hbm_set_disp_param(struct drm_connector *connector,
 				u32 op_code)
 {
@@ -376,6 +377,7 @@ ssize_t dsi_display_fod_get(struct drm_connector *connector, char *buf)
 
 	return snprintf(buf, PAGE_SIZE, "%d\n", display->panel->mi_cfg.fod_ui_ready);
 }
+#endif
 
 int dsi_display_esd_irq_ctrl(struct dsi_display *display,
 		bool enable)
