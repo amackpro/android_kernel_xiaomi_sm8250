@@ -4912,9 +4912,7 @@ int dsi_panel_enable(struct dsi_panel *panel)
 {
 	int rc = 0;
 	struct dsi_panel_mi_cfg *mi_cfg;
-#ifdef CONFIG_FOD_DEVICE
 	struct dsi_display *display = NULL;
-#endif
 	struct mipi_dsi_host *host = NULL;
 
 	if (!panel) {
@@ -5103,9 +5101,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
 {
 	int rc = 0;
 	struct dsi_panel_mi_cfg *mi_cfg;
-#ifdef CONFIG_FOD_DEVICE
 	struct dsi_display *display = NULL;
-#endif
 	struct mipi_dsi_host *host = NULL;
 	struct dsi_display_mode_priv_info *priv_info;
 	struct dsi_cmd_desc *cmds = NULL;
