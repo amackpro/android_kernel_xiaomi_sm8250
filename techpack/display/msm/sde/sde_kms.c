@@ -1204,9 +1204,7 @@ static void sde_kms_complete_commit(struct msm_kms *kms,
 					 rc);
 		}
 
-#ifdef CONFIG_FOD_DEVICE
 		sde_connector_fod_notify(connector);
-#endif
 	}
 
 	_sde_kms_drm_check_dpms(old_state, DRM_PANEL_EVENT_BLANK);

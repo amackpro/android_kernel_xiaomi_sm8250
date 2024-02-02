@@ -30,10 +30,7 @@
 #include "../../../../kernel/irq/internals.h"
 #include "xiaomi_frame_stat.h"
 #include "mi_disp_nvt_alpha_data.h"
-
-#ifdef CONFIG_FOD_DEVICE
 #include "mi_disp_lhbm.h"
-#endif
 
 #if DSI_READ_WRITE_PANEL_DEBUG
 #include <linux/proc_fs.h>
@@ -54,7 +51,6 @@ static struct dsi_panel_cmd_set gamma_cmd_set[DSI_CMD_SET_MI_GAMMA_SWITCH_MAX];
 
 static struct calc_hw_vsync g_calc_hw_vsync[MAX_DSI_ACTIVE_DISPLAY];
 
-#ifdef CONFIG_FOD_DEVICE
 static void panelon_dimming_enable_delayed_work(struct work_struct *work)
 {
 	struct dsi_panel_mi_cfg *mi_cfg = container_of(work,
@@ -171,6 +167,7 @@ static void enter_aod_delayed_work(struct work_struct *work)
 exit:
 	mutex_unlock(&panel->panel_lock);
 }
+
 
 static int dsi_panel_parse_gamma_config(struct dsi_panel *panel,
 				struct device_node *of_node)
@@ -376,7 +373,6 @@ static int dsi_panel_parse_elvss_dimming_config(struct dsi_panel *panel,
 
 	return rc;
 }
-#endif
 
 int dsi_panel_parse_esd_gpio_config(struct dsi_panel *panel)
 {
@@ -408,20 +404,16 @@ int dsi_panel_parse_mi_config(struct dsi_panel *panel,
 	int rc = 0;
 	struct dsi_parser_utils *utils = &panel->utils;
 	struct dsi_panel_mi_cfg *mi_cfg = &panel->mi_cfg;
-#ifdef CONFIG_FOD_DEVICE
 	u32 length = 0;
 	const u32 *arr;
-#endif
 #ifdef CONFIG_FACTORY_BUILD
-	u32 val;
+    u32 val;
 #endif
 
 	mi_cfg->dsi_panel = panel;
 	g_panel = panel;
 
-#ifdef CONFIG_FOD_DEVICE
 	INIT_DELAYED_WORK(&mi_cfg->enter_aod_delayed_work, enter_aod_delayed_work);
-#endif
 	mi_cfg->aod_wakelock = wakeup_source_create("aod_wakelock");
 	wakeup_source_add(mi_cfg->aod_wakelock);
 
@@ -444,7 +436,7 @@ int dsi_panel_parse_mi_config(struct dsi_panel *panel,
 		pr_info("mi feature disabled\n");
 		return 0;
 	}
-#ifdef CONFIG_FOD_DEVICE
+
 	mi_cfg->hbm_51_ctrl_flag = utils->read_bool(utils->data,
 		"mi,mdss-dsi-panel-hbm-51-ctrl-flag");
 	if (mi_cfg->hbm_51_ctrl_flag) {
@@ -624,6 +616,7 @@ skip_dimlayer_parse:
 			mi_cfg->fod_lhbm_white_cfg[FOD_LHBM_WHITE_110NIT_GIROFF].update_index = mi_cfg->fod_lhbm_white_cfg[FOD_LHBM_WHITE_110NIT_GIRON].update_index;
 		}
 	}
+
 	mi_cfg->nolp_b2reg_ctrl_flag = utils->read_bool(utils->data,
 	"mi,mdss-dsi-panel-nolp-b2reg-ctrl-flag");
 	if (mi_cfg->nolp_b2reg_ctrl_flag) {
@@ -671,6 +664,7 @@ skip_dimlayer_parse:
 	} else {
 		pr_info("fod_off_dimming_delay %d\n", mi_cfg->fod_off_dimming_delay);
 	}
+
 	mi_cfg->gamma_update_flag = utils->read_bool(utils->data,
 			"mi,mdss-dsi-panel-gamma-update-flag");
 	if (mi_cfg->gamma_update_flag) {
@@ -875,7 +869,7 @@ skip_dimlayer_parse:
 	mi_cfg->fod_lhbm_low_brightness_enabled = false;
 	mi_cfg->fp_status = 0;
 	mi_cfg->dim_fp_dbv_max_in_hbm_flag = false;
-#endif
+
 	return rc;
 }
 
@@ -3757,7 +3751,6 @@ ssize_t calc_hw_vsync_info(struct dsi_panel *panel, char *buf)
 			panel->type);
 }
 
-#ifdef CONFIG_FOD_DEVICE
 int mi_dsi_panel_set_fod_brightness(struct mipi_dsi_device *dsi, u16 brightness)
 {
 	u8 payload[2] = {(fpr_alpha_set[brightness] >> 8) & 0x0f, fpr_alpha_set[brightness] & 0xff};
@@ -3832,12 +3825,12 @@ static int mi_dsi_update_lhbm_cmd_87reg(struct dsi_panel *panel,
 
 	return rc;
 }
-#endif
 
 int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 {
 	int rc = 0;
 	uint32_t temp = 0;
+	u32 fod_backlight = 0;
 	struct dsi_panel_mi_cfg *mi_cfg  = NULL;
 	struct dsi_cmd_desc *cmds = NULL;
 	struct dsi_display_mode_priv_info *priv_info;
@@ -3846,13 +3839,11 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 	u32 count;
 	u8 *tx_buf;
 	bool is_thermal_call = false;
-#ifdef CONFIG_FOD_DEVICE
-	u32 fod_backlight = 0
 	u32 fod_lhbm_level = 0;
 	bool fod_lhbm_low_brightness_enabled = false;
 	bool fod_lhbm_low_brightness_allow = true;
 	u32 fp_status = 0;
-#endif
+
 	if (!panel) {
 		pr_err("invalid params\n");
 		return -EINVAL;
@@ -3868,7 +3859,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 
 	display_utc_time_marker("param_type = 0x%X", param);
 
-#ifdef CONFIG_FOD_DEVICE
 	if (!panel->panel_initialized
 		&& (param & 0x0F000000) != DISPPARAM_FOD_BACKLIGHT_ON
 		&& (param & 0x0F000000) != DISPPARAM_FOD_BACKLIGHT_OFF
@@ -3881,7 +3871,7 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		pr_err("Panel not initialized!\n");
 		goto exit;
 	}
-#endif
+
 	if ((panel->host_config.phy_type == DSI_PHY_TYPE_CPHY)
 		&& (param & 0x700) && param != 0xF00) {
 			pr_info("save cabc status!\n");
@@ -3902,7 +3892,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 	else
 		priv_info = NULL;
 
-#ifdef CONFIG_FOD_DEVICE
 	if ((param & 0x000F0000) == DISPPARAM_HBM_ON) {
 		is_thermal_call = (param & 0x1);
 		param = (param & 0xFFFFFFFE);
@@ -3925,7 +3914,7 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 			param = (param & 0xFFFFFFF0);
 		}
 	}
-#endif
+
 	/* set smart fps status */
 	if (param & 0xF0000000) {
 		fm_stat.enabled = param & 0x01;
@@ -4023,7 +4012,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		pr_info("acl off\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_ACL_OFF);
 		break;
-#ifdef CONFIG_FOD_DEVICE
 	case DISPPARAM_LOW_BRIGHTNESS_FOD:
 		pr_info("DISPPARAM_LOW_BRIGHTNESS_FOD=%d\n", fod_lhbm_low_brightness_enabled);
 		mi_cfg->fod_lhbm_low_brightness_enabled = fod_lhbm_low_brightness_enabled;
@@ -4039,7 +4027,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 			mi_disp_set_fod_queue_work(0, false);
 		}
 		break;
-#endif
 	case DISPPARAM_ROUND_ON:
 		pr_info("DISPPARAM_ROUND_ON\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_ROUND_ON);
@@ -4165,7 +4152,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		mi_cfg->dimming_state = STATE_DIM_RESTORE;
 		mi_cfg->hbm_enabled = false;
 		break;
-#ifdef CONFIG_FOD_DEVICE
 	case DISPPARAM_HBM_FOD_ON:
 		if (mi_cfg->local_hbm_enabled) {
 			cancel_delayed_work(&mi_cfg->enter_aod_delayed_work);
@@ -4407,7 +4393,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 			}
 		}
 		break;
-#endif
 	case DISPPARAM_DC_ON:
 		pr_info("DC on\n");
 		if (mi_cfg->dc_type == 0) {
@@ -4490,7 +4475,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 				mi_cfg->last_bl_level, resend_backlight);
 		rc = dsi_panel_update_backlight(panel, resend_backlight);
 		break;
-#ifdef CONFIG_FOD_DEVICE
 	case DISPPARAM_FOD_BACKLIGHT:
 		if (fod_backlight == 0x1000) {
 			pr_info("FOD backlight restore last_bl_level=%d\n",
@@ -4513,7 +4497,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 			mi_cfg->dimming_state = STATE_NONE;
 		}
 		break;
-#endif
 	case DISPPARAM_CRC_OFF:
 		pr_info("crc off\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_CRC_OFF);
@@ -4524,7 +4507,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 
 	temp = param & 0x0F000000;
 	switch (temp) {
-#ifdef CONFIG_FOD_DEVICE
 	case DISPPARAM_FOD_BACKLIGHT_ON:
 		pr_info("fod_backlight_flag on\n");
 		mi_cfg->fod_backlight_flag = true;
@@ -4541,7 +4523,6 @@ int dsi_panel_set_disp_param(struct dsi_panel *panel, u32 param)
 		pr_info("elvss dimming off\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_ELVSS_DIMMING_OFF);
 		break;
-#endif
 	case DISPPARAM_FLAT_MODE_ON:
 		pr_info("flat mode on\n");
 		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_MI_FLAT_MODE_ON);

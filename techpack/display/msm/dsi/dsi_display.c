@@ -38,9 +38,7 @@
 
 DEFINE_MUTEX(dsi_display_clk_mutex);
 
-#ifdef CONFIG_FOD_DEVICE
 extern int mi_disp_lhbm_attach_primary_dsi_display(struct dsi_display *display);
-#endif
 
 static char dsi_display_primary[MAX_CMDLINE_PARAM_LEN];
 static char dsi_display_secondary[MAX_CMDLINE_PARAM_LEN];
@@ -5594,11 +5592,10 @@ static int dsi_display_bind(struct device *dev,
 
 	dsi_panel_procfs_init(display->panel);
 
-#ifdef CONFIG_FOD_DEVICE
 	rc = mi_disp_lhbm_attach_primary_dsi_display(display);
 	if (rc)
 		DSI_ERR("lhbm attach primary_dsi_display fail\n");
-#endif
+
 	goto error;
 
 error_host_deinit:

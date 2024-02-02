@@ -373,7 +373,6 @@ extern ssize_t smart_fps_value_show(struct device *device,
 			   struct device_attribute *attr,
 			   char *buf);
 
-#ifdef CONFIG_FOD_DEVICE
 static ssize_t fod_ui_ready_show(struct device *device,
 			   struct device_attribute *attr,
 			   char *buf)
@@ -381,7 +380,6 @@ static ssize_t fod_ui_ready_show(struct device *device,
 	struct drm_connector *connector = to_drm_connector(device);
 	return dsi_display_fod_get(connector, buf);
 }
-#endif
 
 static ssize_t complete_commit_time_show(struct device *dev,
 				struct device_attribute *attr,
@@ -545,9 +543,7 @@ static DEVICE_ATTR_RO(wp_info);
 static DEVICE_ATTR_RO(dynamic_fps);
 static DEVICE_ATTR_RW(doze_brightness);
 static DEVICE_ATTR_RO(gamma_test);
-#ifdef CONFIG_FOD_DEVICE
 static DEVICE_ATTR_RO(fod_ui_ready);
-#endif
 static DEVICE_ATTR_RO(smart_fps_value);
 static DEVICE_ATTR_RO(complete_commit_time);
 static DEVICE_ATTR_RW(thermal_hbm_disabled);
@@ -567,9 +563,7 @@ static struct attribute *connector_dev_attrs[] = {
 	&dev_attr_dynamic_fps.attr,
 	&dev_attr_doze_brightness.attr,
 	&dev_attr_gamma_test.attr,
-#ifdef CONFIG_FOD_DEVICE
 	&dev_attr_fod_ui_ready.attr,
-#endif
 	&dev_attr_smart_fps_value.attr,
 	&dev_attr_complete_commit_time.attr,
 	&dev_attr_thermal_hbm_disabled.attr,

@@ -1,8 +1,2 @@
 source techpack/data/drivers/rmnet/perf/Kconfig
 source techpack/data/drivers/rmnet/shs/Kconfig
-
-config FOD_DEVICE
-	bool "Xiaomi FOD support"
-	default n
-	help
-	  When this option is enabled, MI_FOD support will be added.
