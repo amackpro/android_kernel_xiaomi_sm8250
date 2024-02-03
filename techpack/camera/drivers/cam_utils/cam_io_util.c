@@ -260,7 +260,7 @@ int cam_io_dump(void __iomem *base_addr, uint32_t start_offset, int size)
 	p_str = line_str;
 	for (i = 0; i < size; i++) {
 		if (i % NUM_REGISTER_PER_LINE == 0) {
-			snprintf(p_str, 12, "0x%08x: ",
+			snprintf(p_str, 13, "0x%08x: ",
 				REG_OFFSET(start_offset, i));
 			p_str += 11;
 		}
