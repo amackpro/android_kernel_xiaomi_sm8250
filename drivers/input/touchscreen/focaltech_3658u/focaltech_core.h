@@ -130,6 +130,8 @@
 *****************************************************************************/
 struct ftxxxx_proc {
 	struct proc_dir_entry *proc_entry;
+	struct proc_dir_entry *tp_lockdown_info_proc;
+	struct proc_dir_entry *tp_fw_version_proc;
 	struct proc_dir_entry *tp_test_data_proc;
 	struct proc_dir_entry *tp_test_result_proc;
 	struct proc_dir_entry *tp_selftest_proc;
@@ -228,7 +230,7 @@ struct fts_ts_data {
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
-
+	struct dentry *tpdbg_dentry;
 	bool poweroff_on_sleep;
 	/* power supply */
 	struct mutex power_supply_lock;
@@ -241,8 +243,6 @@ struct fts_ts_data {
 	int palm_sensor_switch;
 	bool power_status;
 	bool is_expert_mode;
-	u8 gesture_cmd;
-	bool gesture_cmd_delay;
 #endif
 };
 

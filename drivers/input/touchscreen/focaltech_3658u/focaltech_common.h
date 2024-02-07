@@ -110,10 +110,6 @@
 #define FTS_PALM_ON                         0x05
 #define FTS_PALM_OFF                        0x00
 
-#define FTS_GESTURE_CTRL                    0xD1
-#define FTS_GESTURE_DOUBLETAP               0x04
-#define FTS_GESTURE_AOD                     0x07
-
 #define FTS_SYSFS_ECHO_ON(buf)      (buf[0] == '1')
 #define FTS_SYSFS_ECHO_OFF(buf)     (buf[0] == '0')
 
