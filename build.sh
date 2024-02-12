@@ -18,9 +18,9 @@
 
 DEVICE="$1"
 
-#INLINE KERNELSU FOR BUILDING
-curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
-#endif
+if [[ $@ =~ ksu ]]; then
+	curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+fi
 
 KBUILD_COMPILER_STRING=$($HOME/tc/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 KBUILD_LINKER_STRING=$($HOME/tc/clang/bin/ld.lld --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' | sed 's/(compatible with [^)]*)//')
@@ -86,11 +86,6 @@ echo "------ Starting Compilation ------"
 # Make defconfig
 make -j${KEBABS} ${ARGS} vendor/"${DEVICE}"_defconfig
 
-scripts/config --file out/.config \
-    -e KPROBES \
-    -e HAVE_KPROBES \
-    -e KPROBE_EVENTS \
-
 if [[ "$2" == "miui" ]]; then
 echo " -------MIUI optimization initialized-------"
 scripts/config --file out/.config \
@@ -98,6 +93,14 @@ scripts/config --file out/.config \
     -e BOOT_INFO \
     -e BINDER_OPT \
     -e MIHW
+fi
+
+if [[ $@ =~ ksu ]]; then
+scripts/config --file out/.config \
+    -e KPROBES \
+    -e HAVE_KPROBES \
+    -e KPROBE_EVENTS \
+    -e KSU
 fi
 
 if [[ "$2" =~ "aosp" ]]; then
@@ -122,17 +125,22 @@ if [[ "$2" =~ "aosp"* ]]; then
         git checkout arch/arm64/boot/dts/vendor &>/dev/null
 fi
 
-#REMOVE KERNELSU NOW
-git checkout drivers/Makefile &>/dev/null
-git checkout drivers/Kconfig &>/dev/null
-rm -rf KernelSU
-rm -rf drivers/kernelsu
+if [[ $@ =~ ksu ]]; then
+	git checkout drivers/Makefile &>/dev/null
+	git checkout drivers/Kconfig &>/dev/null
+	rm -rf KernelSU
+	rm -rf drivers/kernelsu
+fi
 
 echo "------ Finishing Build ------"
 
 END=$(date +"%s")
 DIFF=$((END - START))
-zipname="$VERSION.zip"
+if [[ $@ =~ ksu ]]; then
+	zipname="${VERSION}-KSU.zip"
+else
+	zipname="$VERSION.zip"
+fi
 if [ -f "out/arch/arm64/boot/Image" ] && [ -f "out/arch/arm64/boot/dtbo.img" ] && [ -f "out/arch/arm64/boot/dtb" ]; then
 	git clone -q https://github.com/amackpro/AnyKernel3.git -b ${DEVICE}
 	cp out/arch/arm64/boot/Image AnyKernel3
