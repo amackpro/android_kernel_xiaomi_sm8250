@@ -44,6 +44,10 @@ if [[ "$2" == "aosp" ]]; then
 	VERSION="MINAZUKI-AOSP-${DEVICE^^}-${DATE}"
 fi
 
+if [[ "$2" == "oplus" ]]; then
+        VERSION="MINAZUKI-OPLUS-${DEVICE^^}-${DATE}"
+fi
+
 if [[ "$2" == "" ]]; then
 	VERSION="MINAZUKI-PORTS-${DEVICE^^}-${DATE}"
 fi
@@ -93,6 +97,13 @@ scripts/config --file out/.config \
     -e BOOT_INFO \
     -e BINDER_OPT \
     -e MIHW
+fi
+
+if [[ "$2" == "oplus" ]]; then
+echo " -------MIUI optimization initialized-------"
+scripts/config --file out/.config \
+    --set-str CMDLINE "ramoops_memreserve=4M androidboot.prjname=20807 androidboot.project_codename=kebab androidboot.prj_version=11" \
+    -e OPLUS
 fi
 
 if [[ $@ =~ ksu ]]; then
