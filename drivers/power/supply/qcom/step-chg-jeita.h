@@ -10,7 +10,7 @@
 #define MAX_STEP_CHG_ENTRIES		6
 #define MAX_COLD_STEP_CHG_ENTRIES	2
 #define BATT_COOL_THRESHOLD		150
-#define BATT_WARM_THRESHOLD		439
+#define BATT_WARM_THRESHOLD		445
 
 struct step_chg_jeita_param {
 	u32			psy_prop;
