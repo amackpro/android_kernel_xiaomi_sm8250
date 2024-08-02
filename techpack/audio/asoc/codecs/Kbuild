@@ -85,6 +85,14 @@ ifdef CONFIG_BOARD_MUNCH
 CDEFINES += -DCONFIG_TARGET_PRODUCT_MUNCH
 endif
 
+ifdef CONFIG_BOARD_DAGU
+CDEFINES += -DCONFIG_TARGET_PRODUCT_DAGU
+endif
+
+ifdef CONFIG_BOARD_PIPA
+CDEFINES += -DCONFIG_TARGET_PRODUCT_PIPA
+endif
+
 # As per target team, build is done as follows:
 # Defconfig : build with default flags
 # Slub      : defconfig  + CONFIG_SLUB_DEBUG := y +
@@ -239,14 +247,14 @@ ifeq ($(KERNEL_BUILD), 1)
 	obj-y	+= wcd937x/
 	obj-y	+= wcd938x/
 	obj-y	+= bolero/
-ifneq ($(filter y, $(CONFIG_BOARD_ENUMA) $(CONFIG_BOARD_ELISH)),)
+ifneq ($(filter y, $(CONFIG_BOARD_ENUMA) $(CONFIG_BOARD_ELISH) $(CONFIG_BOARD_DAGU)),)
 	obj-y	+= cs35l41_k81/
+else ifeq ($(CONFIG_BOARD_MUNCH), y)
+	obj-y	+= tfa9874/
+else ifeq ($(CONFIG_BOARD_PIPA), y)
+	obj-y	+= aw882xx/
 else
 	obj-y	+= cs35l41/
-endif
-ifeq ($(CONFIG_BOARD_MUNCH), y)
-	obj-y	+= tfa9874/
-else
 	obj-y	+= tfa98xx/
 endif
 	obj-y	+= rouleur/

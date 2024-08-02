@@ -274,6 +274,10 @@ ifdef CONFIG_BOARD_PSYCHE
 CDEFINES += -DAUDIO_FORCE_RESTART_ADSP_TEMP
 endif
 
+ifdef CONFIG_BOARD_DAGU
+CDEFINES += -DAUDIO_FORCE_RESTART_ADSP_TEMP
+endif
+
 KBUILD_CPPFLAGS += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
@@ -316,6 +320,15 @@ ifdef CONFIG_BOARD_ELISH
 CDEFINES += -DCONFIG_TARGET_PRODUCT_ELISH 
 endif
 
+ifdef CONFIG_BOARD_PIPA
+CDEFINES += -DCONFIG_SND_SOC_AW882XX_TDM
+CDEFINES += -DCONFIG_TARGET_PRODUCT_PIPA
+endif
+
+ifdef CONFIG_BOARD_DAGU
+CDEFINES += -DCONFIG_TARGET_PRODUCT_DAGU
+endif
+
 ifdef CONFIG_BOARD_MUNCH
 CDEFINES += -DCONFIG_TARGET_PRODUCT_MUNCH
 endif
@@ -326,6 +339,10 @@ endif
 
 ifeq ($(KERNEL_BUILD), 1)
 	obj-y += codecs/
+
+ifeq (y, $(filter y, $(CONFIG_BOARD_DAGU) $(CONFIG_BOARD_PIPA)))
+	obj-y += mmhardware/
+endif
 endif
 
 obj-$(CONFIG_SND_SOC_MSM_QDSP6V2_INTF) += q6_dlkm.o

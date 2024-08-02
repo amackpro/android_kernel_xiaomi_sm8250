@@ -1370,7 +1370,11 @@ static int msm_compr_configure_dsp_for_playback
 	struct snd_compr_runtime *runtime = cstream->runtime;
 	struct msm_compr_audio *prtd = runtime->private_data;
 	struct snd_soc_pcm_runtime *soc_prtd = cstream->private_data;
+#if defined(CONFIG_TARGET_PRODUCT_PIPA) || defined(CONFIG_TARGET_PRODUCT_DAGU)
+	uint16_t bits_per_sample = 16;
+#else
 	uint16_t bits_per_sample = 24;
+#endif
 	int dir = IN, ret = 0;
 	struct audio_client *ac = prtd->audio_client;
 	uint32_t stream_index;
@@ -2402,8 +2406,11 @@ static int msm_compr_trigger(struct snd_compr_stream *cstream, int cmd)
 	unsigned long flags;
 	int stream_id;
 	uint32_t stream_index;
+#if defined(CONFIG_TARGET_PRODUCT_PIPA) || defined(CONFIG_TARGET_PRODUCT_DAGU)
+	uint16_t bits_per_sample = 16;
+#else
 	uint16_t bits_per_sample = 24;
-
+#endif
 	component = snd_soc_rtdcom_lookup(rtd, DRV_NAME);
 	if (!component) {
 		pr_err("%s: component is NULL\n", __func__);
