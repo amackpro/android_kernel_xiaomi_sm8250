@@ -177,11 +177,11 @@ static int apply_constraint(struct dev_pm_qos_request *req,
 		break;
 	case DEV_PM_QOS_MIN_FREQUENCY:
 		ret = pm_qos_update_target(&qos->min_frequency,
-					   &req->data.pnode, action, value);
+					   &req->data.pnode, action, value, NULL);
 		break;
 	case DEV_PM_QOS_MAX_FREQUENCY:
 		ret = pm_qos_update_target(&qos->max_frequency,
-					   &req->data.pnode, action, value);
+					   &req->data.pnode, action, value, NULL);
 		break;
 	case DEV_PM_QOS_FLAGS:
 		ret = pm_qos_update_flags(&qos->flags, &req->data.flr,
