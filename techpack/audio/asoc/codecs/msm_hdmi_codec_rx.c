@@ -835,7 +835,7 @@ static struct snd_soc_dai_driver msm_ext_disp_audio_codec_rx_dais[] = {
 			.rate_min = 48000,
 			.rate_max = 192000,
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
-				SNDRV_PCM_RATE_192000,
+				SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_44100,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE |
 				SNDRV_PCM_FMTBIT_S24_LE |
 				SNDRV_PCM_FMTBIT_S24_3LE,
@@ -852,7 +852,7 @@ static struct snd_soc_dai_driver msm_ext_disp_audio_codec_rx_dais[] = {
 			.rate_min = 48000,
 			.rate_max = 192000,
 			.rates = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_96000 |
-				SNDRV_PCM_RATE_192000,
+				SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_44100,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE |
 				SNDRV_PCM_FMTBIT_S24_LE |
 				SNDRV_PCM_FMTBIT_S24_3LE,

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  */
 #include <linux/slab.h>
 #include <linux/kthread.h>
@@ -1306,7 +1307,8 @@ static int voice_destroy_mvm_cvs_session(struct voice_data *v)
 
 	if (!apr_mvm || !apr_cvs) {
 		pr_err("%s: apr_mvm or apr_cvs is NULL\n", __func__);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto fail;
 	}
 	mvm_handle = voice_get_mvm_handle(v);
 	cvs_handle = voice_get_cvs_handle(v);
@@ -3829,14 +3831,6 @@ static int voice_unmap_cal_memory(int32_t cal_type,
 			else
 				pr_err("%s: Invalid cal type %d!\n",
 					__func__, cal_type);
-
-			result2 = voice_send_start_voice_cmd(v);
-			if (result2) {
-				pr_err("%s: Voice_send_start_voice_cmd failed for session 0x%x, err %d!\n",
-					__func__, v->session_id, result2);
-
-				result = result2;
-			}
 		}
 
 		if ((cal_block->map_data.q6map_handle != 0) &&
@@ -5260,7 +5254,9 @@ static int voice_destroy_vocproc(struct voice_data *v)
 	}
 
 	voice_send_cvp_deregister_vol_cal_cmd(v);
+	mutex_lock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 	voice_send_cvp_deregister_cal_cmd(v);
+	mutex_unlock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 	voice_send_cvp_deregister_dev_cfg_cmd(v);
 	voice_send_cvs_deregister_cal_cmd(v);
 
@@ -7102,11 +7098,13 @@ int voc_disable_device(uint32_t session_id)
 		if (ret < 0) {
 			pr_err("%s: Pause Voice Call failed for session 0x%x, err %d!\n",
 			       __func__, v->session_id, ret);
-			goto done;
+			goto fail;
 		}
 		rtac_remove_voice(voice_get_cvs_handle(v));
 		voice_send_cvp_deregister_vol_cal_cmd(v);
+		mutex_lock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 		voice_send_cvp_deregister_cal_cmd(v);
+		mutex_unlock(&common.cal_data[CVP_VOCPROC_CAL]->lock);
 		voice_send_cvp_deregister_dev_cfg_cmd(v);
 
 		/* Unload topology modules */
@@ -7117,8 +7115,7 @@ int voc_disable_device(uint32_t session_id)
 		pr_debug("%s: called in voc state=%d, No_OP\n",
 			 __func__, v->voc_state);
 	}
-
-done:
+fail:
 	mutex_unlock(&v->lock);
 
 	return ret;
@@ -7919,7 +7916,7 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 			 VSS_ISTREAM_EVT_OOB_NOTIFY_ENC_BUFFER_READY) {
 		int ret = 0;
 		u16 cvs_handle;
-		uint32_t *cvs_voc_pkt;
+		uint32_t *cvs_voc_pkt, tot_buf_sz;
 		struct cvs_enc_buffer_consumed_cmd send_enc_buf_consumed_cmd;
 		void *apr_cvs;
 
@@ -7948,9 +7945,14 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 			VSS_ISTREAM_EVT_OOB_NOTIFY_ENC_BUFFER_CONSUMED;
 
 		cvs_voc_pkt = v->shmem_info.sh_buf.buf[1].data;
+
+		if (__builtin_add_overflow(cvs_voc_pkt[2], 3 * sizeof(uint32_t), &tot_buf_sz)) {
+			 pr_err("%s: integer overflow detected\n", __func__);
+			 return -EINVAL;
+		}
+
 		if (cvs_voc_pkt != NULL &&  common.mvs_info.ul_cb != NULL) {
-			if (v->shmem_info.sh_buf.buf[1].size <
-			    ((3 * sizeof(uint32_t)) + cvs_voc_pkt[2])) {
+			if (v->shmem_info.sh_buf.buf[1].size < tot_buf_sz) {
 				pr_err("%s: invalid voc pkt size\n", __func__);
 				return -EINVAL;
 			}
@@ -8253,6 +8255,19 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 				} else {
 					common.is_source_tracking_resp_success =
 									false;
+					pr_err("%s: Error received for source tracking params\n",
+						__func__);
+				}
+				v->cvp_state = CMD_STATUS_SUCCESS;
+				v->async_err = ptr[1];
+				wake_up(&v->cvp_wait);
+				break;
+			case VSS_IFNN_CMD_GET_ACTIVITY:
+				if (!ptr[1]) {
+					/* Read data from shared memory */
+					common.is_fnn_resp_success = true;
+				} else {
+					common.is_fnn_resp_success = false;
 					pr_err("%s: Error received for source tracking params\n",
 						__func__);
 				}
@@ -9852,6 +9867,142 @@ int voc_get_source_tracking(struct source_tracking_param *sourceTrackingData)
 	return ret;
 }
 EXPORT_SYMBOL(voc_get_source_tracking);
+
+static int voice_send_get_fnn_cmd(struct voice_data *v,
+			struct fluence_nn_nnvad_monitor_param *fnnData)
+{
+	struct apr_hdr cvp_get_fnn_param_cmd;
+	int ret = 0;
+	void *apr_cvp;
+	u16 cvp_handle;
+	int i;
+
+	pr_debug("%s: Enter\n", __func__);
+
+	if (!v) {
+		pr_err("%s: v is NULL\n", __func__);
+
+		ret = -EINVAL;
+		goto done;
+	}
+	apr_cvp = common.apr_q6_cvp;
+
+	if (!apr_cvp) {
+		pr_err("%s: apr_cvp is NULL\n", __func__);
+
+		ret = -EINVAL;
+		goto done;
+	}
+
+	cvp_handle = voice_get_cvp_handle(v);
+
+	/* send APR command to retrieve Sound Focus Params */
+	cvp_get_fnn_param_cmd.hdr_field =
+				APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+					      APR_HDR_LEN(APR_HDR_SIZE),
+					      APR_PKT_VER);
+	cvp_get_fnn_param_cmd.pkt_size = APR_PKT_SIZE(APR_HDR_SIZE,
+			sizeof(cvp_get_fnn_param_cmd) - APR_HDR_SIZE);
+	cvp_get_fnn_param_cmd.src_port =
+				voice_get_idx_for_session(v->session_id);
+	cvp_get_fnn_param_cmd.dest_port = cvp_handle;
+	cvp_get_fnn_param_cmd.token = 0;
+	cvp_get_fnn_param_cmd.opcode = VSS_ISOUNDFOCUS_CMD_GET_SECTORS;
+
+	v->cvp_state = CMD_STATUS_FAIL;
+	v->async_err = 0;
+	ret = apr_send_pkt(apr_cvp, (uint32_t *)&cvp_get_fnn_param_cmd);
+	if (ret < 0) {
+		pr_err("%s: Error in sending APR command\n", __func__);
+
+		ret = -EINVAL;
+		goto done;
+	}
+	ret = wait_event_timeout(v->cvp_wait,
+				 (v->cvp_state == CMD_STATUS_SUCCESS),
+				 msecs_to_jiffies(TIMEOUT_MS));
+	if (!ret) {
+		pr_err("%s: wait_event timeout\n", __func__);
+
+		ret = -EINVAL;
+		goto done;
+	}
+
+	if (v->async_err > 0) {
+		pr_err("%s: DSP returned error[%s]\n",
+				__func__, adsp_err_get_err_str(
+				v->async_err));
+		ret = adsp_err_get_lnx_err_code(
+				v->async_err);
+		goto done;
+	}
+
+	if (common.is_fnn_resp_success) {
+		fnnData->speech_probability = common.fnnResponse.speech_probability;
+		pr_debug("%s: speech_probability = %d\n",
+			  __func__, i, common.fnnResponse.speech_probability);
+
+		fnnData->nspp_vad_flag = common.fnnResponse.nspp_vad_flag;
+		pr_debug("%s: nspp_vad_flag = %d\n",
+			  __func__, i, common.fnnResponse.nspp_vad_flag);
+
+		fnnData->asln_vad_flag = common.fnnResponse.asln_vad_flag;
+		pr_debug("%s: asln_vad_flag = %d\n",
+			  __func__, i, common.fnnResponse.asln_vad_flag);
+
+		common.is_fnn_resp_success = false;
+
+		ret = 0;
+	} else {
+		pr_err("%s: Invalid payload received from CVD\n", __func__);
+
+		ret = -EINVAL;
+	}
+done:
+	pr_debug("%s: Exit, ret=%d\n", __func__, ret);
+
+	return ret;
+}
+
+/**
+ * voc_get_fnn - retrieves fnn data.
+ *
+ * @fnnData: pointer to be updated with fnn data.
+ *
+ * Returns 0 on success or error on failure
+ */
+int voc_get_fnn(struct fluence_nn_nnvad_monitor_param *fnnData)
+{
+	struct voice_data *v = NULL;
+	int ret = -EINVAL;
+	struct voice_session_itr itr;
+
+	pr_debug("%s: Enter\n", __func__);
+
+	mutex_lock(&common.common_lock);
+
+	voice_itr_init(&itr, ALL_SESSION_VSID);
+	while (voice_itr_get_next_session(&itr, &v)) {
+		if (v != NULL) {
+			mutex_lock(&v->lock);
+			if (is_voc_state_active(v->voc_state) &&
+				(v->lch_mode != VOICE_LCH_START) &&
+				!v->disable_topology)
+				ret = voice_send_get_fnn_cmd(v, fnnData);
+			mutex_unlock(&v->lock);
+		} else {
+			pr_err("%s: invalid session\n", __func__);
+
+			break;
+		}
+	}
+
+	mutex_unlock(&common.common_lock);
+	pr_debug("%s: Exit, ret=%d\n", __func__, ret);
+
+	return ret;
+}
+EXPORT_SYMBOL(voc_get_fnn);
 
 static int voice_set_cvp_param(struct voice_data *v,
 			       struct vss_icommon_mem_mapping_hdr *mem_hdr,
