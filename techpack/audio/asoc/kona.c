@@ -4895,7 +4895,7 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		/*2 slot config - bits 0 and 1 set for the first two slots */
-		slot_mask = 0x0000FFFF >> (16 - slots);
+		slot_mask = 0xFFFFFFFF >> (32-slots);
 
 		pr_debug("%s: tdm rx slot_width %d slots %d slot_mask %x\n",
 			__func__, slot_width, slots, slot_mask);
@@ -4919,7 +4919,7 @@ static int kona_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 		}
 	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
 		/*2 slot config - bits 0 and 1 set for the first two slots */
-		slot_mask = 0x0000FFFF >> (16 - slots);
+		slot_mask = 0xFFFFFFFF >> (32-slots);
 
 		pr_debug("%s: tdm tx slot_width %d slots %d slot_mask %x\n",
 			__func__, slot_width, slots, slot_mask);

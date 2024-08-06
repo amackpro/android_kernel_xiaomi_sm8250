@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2012-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  */
 
 
@@ -5533,6 +5534,9 @@ struct afe_param_id_lpass_core_shared_clk_cfg {
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_DTS_HPX		0x10015002
 #define ADM_CMD_COPP_OPEN_TOPOLOGY_ID_AUDIOSPHERE	0x10028000
 #define VPM_TX_DM_FLUENCE_EF_COPP_TOPOLOGY		0x10000005
+#define VPM_TX_QMIC_FLUENCE_PRO_VC_COPP_TOPOLOGY        0x10000006
+#define VPM_TX_VOICE_FLUENCE_NN_COPP_TOPOLOGY           0x10028008
+#define VPM_TX_VOICE_FLUENCE_PROVC_NN_COPP_TOPOLOGY     0x10000002
 #define ADM_TOPOLOGY_ID_AUDIO_RX_FVSAM			0x1000FFF0
 #define ADM_TOPOLOGY_ID_AUDIO_RX_MISE			0x1000A467
 
@@ -13252,6 +13256,12 @@ struct source_tracking_param {
 	uint8_t polar_activity[MAX_POLAR_ACTIVITY_INDICATORS];
 } __packed;
 
+struct fluence_nn_nnvad_monitor_param {
+    int32_t speech_probability;
+    int32_t nspp_vad_flag;
+    int32_t asln_vad_flag;
+} __packed;
+
 struct doa_tracking_mon_param {
 	uint16_t target_angle_L16[MAX_DOA_TRACKING_ANGLES];
 	uint16_t interf_angle_L16[MAX_DOA_TRACKING_ANGLES];
@@ -13272,6 +13282,13 @@ struct adm_param_fluence_sourcetracking_t {
 	uint8_t polar_activity[MAX_POLAR_ACTIVITY_INDICATORS];
 } __packed;
 
+struct adm_param_fluence_fnn_t {
+    int32_t speech_probability;
+    int32_t nspp_vad_flag;
+    int32_t asln_vad_flag;
+    int32_t reserved;
+} __packed;
+
 struct adm_param_doa_tracking_mon_t {
 	uint16_t target_angle_L16[MAX_DOA_TRACKING_ANGLES];
 	uint16_t interf_angle_L16[MAX_DOA_TRACKING_ANGLES];
@@ -13284,6 +13301,8 @@ struct afe_doa_tracking_mon_get_param_resp {
 	struct doa_tracking_mon_param doa;
 } __packed;
 
+#define AUDPROC_PARAM_ID_FLUENCE_FNN                0X00010B45
+#define MODULE_ID_FLUENCE_NN_NS                     0x00010F3E
 #define AUDPROC_MODULE_ID_AUDIOSPHERE               0x00010916
 #define AUDPROC_PARAM_ID_AUDIOSPHERE_ENABLE         0x00010917
 #define AUDPROC_PARAM_ID_AUDIOSPHERE_STRENGTH       0x00010918
