@@ -32,7 +32,9 @@
 #define WINDOW_STATS_MAX		1
 #define WINDOW_STATS_MAX_RECENT_AVG	2
 #define WINDOW_STATS_AVG		3
-#define WINDOW_STATS_INVALID_POLICY	4
+#define WINDOW_STATS_WMA		4
+#define WINDOW_STATS_EWMA		5
+#define WINDOW_STATS_INVALID_POLICY	6
 
 #define EXITING_TASK_MARKER	0xdeaddead
 
@@ -98,6 +100,8 @@ walt_adjust_nr_big_tasks(struct rq *rq, int delta, bool inc)
 
 	BUG_ON(rq->walt_stats.nr_big_tasks < 0);
 }
+
+extern u64 walt_get_prev_group_run_sum(struct rq *rq);
 
 static inline void
 fixup_cumulative_runnable_avg(struct walt_sched_stats *stats,
