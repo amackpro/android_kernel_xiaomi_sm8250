@@ -80,6 +80,8 @@ int suid_dumpable = 0;
 
 #define SERVICEMANAGER_BIN "/system/bin/servicemanager"
 #define SURFACEFLINGER_BIN "/system/bin/surfaceflinger"
+#define CAMERA "com.android.camera"
+#define SYSTEMUI "com.android.systemui"
 
 static struct task_struct *servicemanager_tsk;
 bool task_is_servicemanager(struct task_struct *p)
@@ -1949,8 +1951,15 @@ static int __do_execve_file(int fd, struct filename *filename,
 		if (unlikely(!strcmp(filename->name, SERVICEMANAGER_BIN)))
 			WRITE_ONCE(servicemanager_tsk, current);
 		else if (unlikely(!strncmp(filename->name,
-					   SURFACEFLINGER_BIN,
-					   strlen(SURFACEFLINGER_BIN)))) {
+					   SURFACEFLINGER_BIN,strlen(SURFACEFLINGER_BIN)))) {
+			current->flags |= PF_PERF_CRITICAL;
+			set_cpus_allowed_ptr(current, cpu_perf_mask);
+		} else if (unlikely(!strncmp(filename->name,
+					   CAMERA,strlen(CAMERA)))) {
+			current->flags |= PF_PERF_CRITICAL;
+			set_cpus_allowed_ptr(current, cpu_perf_mask);
+		} else if (unlikely(!strncmp(filename->name,
+					   SYSTEMUI,strlen(SYSTEMUI)))) {
 			current->flags |= PF_PERF_CRITICAL;
 			set_cpus_allowed_ptr(current, cpu_perf_mask);
 		}
