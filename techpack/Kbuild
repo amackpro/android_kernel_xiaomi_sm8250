@@ -1,8 +1,26 @@
 # SPDX-License-Identifier: GPL-2.0-only
 TECHPACK?=y
 
-techpack-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*")
+techpack-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*" -not -name "camera*")
+ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI),y)
+techpack-dirs += $(srctree)/techpack/camera
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_CAS),y)
+techpack-dirs += $(srctree)/techpack/camera-cas
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_LMI),y)
+techpack-dirs += $(srctree)/techpack/camera-lmi
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_TABLET),y)
+techpack-dirs += $(srctree)/techpack/camera-tablet
+endif
 obj-${TECHPACK} += stub/ $(addsuffix /,$(subst $(srctree)/techpack/,,$(techpack-dirs)))
 
-techpack-header-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*")
+techpack-header-dirs := $(shell find $(srctree)/techpack -maxdepth 1 -mindepth 1 -type d -not -name ".*" -not -name "camera*")
+ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI),y)
+techpack-header-dirs += $(srctree)/techpack/camera
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_CAS),y)
+techpack-header-dirs += $(srctree)/techpack/camera-cas
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_LMI),y)
+techpack-header-dirs += $(srctree)/techpack/camera-lmi
+else ifeq ($(CONFIG_TECHPACK_CAMERA_XIAOMI_TABLET),y)
+techpack-header-dirs += $(srctree)/techpack/camera-tablet
+endif
 header-${TECHPACK} += $(addsuffix /include/uapi/,$(subst $(srctree)/techpack/,,$(techpack-header-dirs)))
