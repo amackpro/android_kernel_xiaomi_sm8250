@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2020-2022 Oplus. All rights reserved.
+
+config OPLUS_MODULES
+        tristate "Add for quick app support dns hook"
+		default y
+		depends on OPLUS
+        help
+          Add for oplus Network optimizations
+
