@@ -185,7 +185,6 @@ static RADIX_TREE(ns_tree, GFP_ATOMIC);
 static DEFINE_SPINLOCK(ns_tree_lock);
 static struct ns_stat_info nsi;
 static struct proc_dir_entry *ns_proc_root = NULL;
-static struct proc_dir_entry *ns_proc_root_vnd = NULL;
 
 struct task_struct *nswapoutd = NULL;
 struct task_struct *nswapdropd = NULL;
@@ -1530,8 +1529,6 @@ static inline void ns_create_proc_dir(void)
 {
 	ns_proc_root = proc_mkdir("nandswap", NULL);
 	ns_create_proc(ns_proc_root);
-	ns_proc_root_vnd = proc_mkdir("nandswap_vnd", NULL);
-	ns_create_proc(ns_proc_root_vnd);
 }
 
 static inline void ns_remove_proc(struct proc_dir_entry *parent) {
@@ -1544,8 +1541,6 @@ static inline void ns_remove_proc(struct proc_dir_entry *parent) {
 		remove_proc_entry("swap_ctl", parent);
 		if (parent == ns_proc_root)
 			remove_proc_entry("nandswap", NULL);
-		else
-			remove_proc_entry("nandswap_vnd", NULL);
 		parent = NULL;
 	}
 }
@@ -1553,7 +1548,6 @@ static inline void ns_remove_proc(struct proc_dir_entry *parent) {
 static inline void ns_remove_proc_dir(void)
 {
 	ns_remove_proc(ns_proc_root);
-	ns_remove_proc(ns_proc_root_vnd);
 }
 
 static void nandswap_stop(void)
