@@ -1,0 +1,18 @@
+config MI_FRAGMENTION
+    tristate "Memory Fragmentation Simulator"
+    depends on MMU
+    default n
+    help
+      This option enables a kernel module that simulates memory fragmentation
+      in order to test the effects of memory fragmentation on the system.
+
+      The module allocates memory blocks and either holds or fragments
+      them, depending on the user-defined block order and allocation size.
+      Useful for benchmarking, stress-testing, and performance analysis
+      of memory management.
+
+      The module can be dynamically loaded and unloaded. You can control
+      the amount of memory allocated or fragmented via module parameters
+      and monitor usage through a sysfs interface (/sys/kernel/fragmentize).
+
+      Choose 'M' to build this as a module, or 'Y' to compile it into the kernel.
