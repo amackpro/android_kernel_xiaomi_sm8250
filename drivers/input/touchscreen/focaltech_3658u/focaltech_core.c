@@ -1910,20 +1910,20 @@ static const struct dev_pm_ops fts_dev_pm_ops = {
 
 void fts_update_gesture_state(struct fts_ts_data *ts_data, int bit, bool enable)
 {
-    if (ts_data->suspended) {
+	if (ts_data->suspended) {
 		FTS_ERROR("TP is suspended, do not update gesture state");
-        return;
-    }
+        	return;
+    	}
 
-    FTS_INFO("gesture state:0x%02X, write cmd:0x%02X", ts_data->gesture_status, ts_data->gesture_cmd);
 	mutex_lock(&ts_data->input_dev->mutex);
 	if (enable)
 		ts_data->gesture_status |= 1 << bit;
 	else
 		ts_data->gesture_status &= ~(1 << bit);
+
 	FTS_INFO("gesture state:0x%02X", ts_data->gesture_status);
-    ts_data->gesture_mode = ts_data->gesture_status != 0 ? ENABLE : DISABLE;
-    mutex_unlock(&ts_data->input_dev->mutex);
+	ts_data->gesture_mode = ts_data->gesture_status != 0 ? ENABLE : DISABLE;
+    	mutex_unlock(&ts_data->input_dev->mutex);
 }
 
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
