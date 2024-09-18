@@ -94,8 +94,6 @@ if [[ "$2" == "miui" ]]; then
 echo " -------MIUI optimization initialized-------"
 scripts/config --file out/.config \
     --set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
-    -e MODULES	\
-    -e MODULE_FORCE_LOAD \
     -e BOOT_INFO \
     -e BINDER_OPT \
     -e MIHW
