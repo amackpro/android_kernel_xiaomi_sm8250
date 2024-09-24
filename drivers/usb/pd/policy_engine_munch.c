@@ -1324,13 +1324,6 @@ static void phy_msg_received(struct usbpd *pd, enum pd_sop_type sop,
 	if (PD_MSG_HDR_REV(header) < pd->spec_rev)
 		pd->spec_rev = PD_MSG_HDR_REV(header);
 
-	/*msg_type = PD_MSG_HDR_TYPE(header);
-	num_objs = PD_MSG_HDR_COUNT(header);
-	usbpd_dbg(&pd->dev, "%s type(%d) num_objs(%d)\n",
-			msg_to_string(msg_type, num_objs,
-				PD_MSG_HDR_IS_EXTENDED(header)),
-			msg_type, num_objs);*/
-
 	if (!PD_MSG_HDR_IS_EXTENDED(header)) {
 		rx_msg = kzalloc(sizeof(*rx_msg) + len, GFP_ATOMIC);
 		if (!rx_msg)
