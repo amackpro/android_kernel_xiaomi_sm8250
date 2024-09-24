@@ -54,12 +54,6 @@ config ANDROID_BINDER_IPC_SELFTEST
 	  exhaustively with combinations of various buffer sizes and
 	  alignments.
 
-config BINDER_OPT
-	bool "critical task opt of binder"
-	default n
-	help
-	  Mark important binder calls from ui thread.
-
 config ANDROID_SIMPLE_LMK
 	bool "Simple Android Low Memory Killer"
 	depends on !ANDROID_LOW_MEMORY_KILLER && !MEMCG && !PSI
@@ -92,6 +86,12 @@ config ANDROID_SIMPLE_LMK_TIMEOUT_MSEC
 	  waiting and make itself available to kill more processes.
 
 endif
+
+config BINDER_OPT
+        bool "critical task opt of binder"
+        depends on MIHW
+        ---help---
+          Mark important binder calls from ui thread.
 
 endif # if ANDROID
 

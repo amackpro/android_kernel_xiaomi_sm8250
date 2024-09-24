@@ -76,7 +76,10 @@
 #ifdef CONFIG_MILLET
 #include <linux/millet.h>
 #endif
+
+#ifdef CONFIG_TASK_DELAY_ACCT
 #include <linux/delayacct.h>
+#endif
 
 #include <uapi/linux/android/binder.h>
 #include <uapi/linux/android/binderfs.h>
@@ -88,7 +91,7 @@
 #include "binder_internal.h"
 #include "binder_trace.h"
 
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 #include "linux/trace_clock.h"
 #endif
 
@@ -642,7 +645,7 @@ struct binder_transaction {
 	int debug_id;
 	struct binder_work work;
 	struct binder_thread *from;
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 	int async_from_pid;
 	int async_from_tid;
 	u64 timesRecord;
@@ -2988,9 +2991,10 @@ static bool binder_proc_transaction(struct binder_transaction *t,
 		thread = binder_select_thread_ilocked(proc);
 
 	if (thread) {
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		if (!oneway)
     			binder_thread_set_inherit_top_app(thread, t->from);
-
+#endif
 		binder_transaction_priority(thread->task, t, node_prio,
 					    node->inherit_rt);
 		binder_enqueue_thread_work_ilocked(thread, &t->work);
@@ -3050,7 +3054,7 @@ static struct binder_node *binder_get_node_refs_for_txn(
 	return target_node;
 }
 
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 static inline u64 binder_clock(void)
 {
 	return trace_clock_local();
@@ -3348,13 +3352,13 @@ static void binder_transaction(struct binder_proc *proc,
 			     (u64)extra_buffers_size);
 	if (!reply && !(tr->flags & TF_ONE_WAY)) {
 		t->from = thread;
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		t->async_from_pid = -1;
 		t->async_from_tid = -1;
 #endif
 	} else {
 		t->from = NULL;
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		t->async_from_pid = thread->proc->pid;
 		t->async_from_tid = thread->pid;
 #endif
@@ -3679,7 +3683,7 @@ static void binder_transaction(struct binder_proc *proc,
 			goto err_dead_proc_or_thread;
 		}
 		BUG_ON(t->buffer->async_transaction != 0);
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		t->timesRecord = in_reply_to->timesRecord;
 #endif
 		binder_pop_transaction_ilocked(target_thread, in_reply_to);
@@ -3687,7 +3691,9 @@ static void binder_transaction(struct binder_proc *proc,
 		binder_inner_proc_unlock(target_proc);
 
 		wake_up_interruptible_sync(&target_thread->wait);
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		binder_thread_restore_inherit_top_app(thread);
+#endif
 		binder_restore_priority(current, in_reply_to->saved_priority);
 		binder_free_transaction(in_reply_to);
 	} else if (!(t->flags & TF_ONE_WAY)) {
@@ -3704,7 +3710,7 @@ static void binder_transaction(struct binder_proc *proc,
 		t->need_reply = 1;
 		t->from_parent = thread->transaction_stack;
 		thread->transaction_stack = t;
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 		t->timesRecord = binder_clock();
 #endif
 		binder_inner_proc_unlock(proc);
@@ -4959,7 +4965,7 @@ static int binder_thread_release(struct binder_proc *proc,
 			t = t->to_parent;
 		} else if (t->from == thread) {
 			t->from = NULL;
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_BINDER_OPT)
 			t->async_from_pid = -1;
 			t->async_from_tid = -1;
 #endif
@@ -5224,9 +5230,13 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 	switch (cmd) {
 	case BINDER_WRITE_READ:
+#if IS_ENABLED(CONFIG_TASK_DELAY_ACCT)
 		delayacct_binder_start();
+#endif
 		ret = binder_ioctl_write_read(filp, cmd, arg, thread);
+#if IS_ENABLED(CONFIG_TASK_DELAY_ACCT)
 		delayacct_binder_end();
+#endif
 		if (ret)
 			goto err;
 		break;
@@ -6496,7 +6506,7 @@ int binder_transaction_log_show(struct seq_file *m, void *unused)
 	return 0;
 }
 
-#ifdef CONFIG_MIHW
+#if IS_ENABLED(CONFIG_MIHW)
 static void print_binder_proc_transaction_ilocked(
 				struct seq_file *m,
 				struct binder_proc *proc,
