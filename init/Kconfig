@@ -116,6 +116,7 @@ config MIHW
 	select RTMM
 	select SF_BINDER
 	select TASK_DELAY_ACCT
+	select BOOT_INFO
 	help
 	  Enables XiaoMi MIUI user experience optimization driver code
 
