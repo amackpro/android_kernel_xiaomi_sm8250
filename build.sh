@@ -97,9 +97,6 @@ if [[ "$2" == "miui" ]]; then
 echo " -------MIUI optimization initialized-------"
 scripts/config --file out/.config \
     --set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
-    -e BOOT_INFO \
-    -e BINDER_OPT \
-	-e TASK_DELAY_ACCT \
     -e MIHW \
     -e RING_BUFFER \
     -e TRACING \
@@ -151,7 +148,7 @@ else
 fi
 
 if [ -f "out/arch/arm64/boot/Image.gz" ] && [ -f "out/arch/arm64/boot/dtbo.img" ] && [ -f "out/arch/arm64/boot/dtb.img" ]; then
-	git clone -q https://github.com/amackpro/AnyKernel3.git -b ${DEVICE}
+	git clone -q https://github.com/amackpro/AnyKernel3.git -b ${DEVICE} --depth=1
 	cp out/arch/arm64/boot/Image.gz AnyKernel3
 	cp out/arch/arm64/boot/dtb.img AnyKernel3/dtb
 	cp out/arch/arm64/boot/dtbo.img AnyKernel3
