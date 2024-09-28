@@ -98,6 +98,9 @@ echo " -------MIUI optimization initialized-------"
 scripts/config --file out/.config \
     --set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
     -e MIHW \
+    -d UCLAMP_TASK \
+    -e SCHED_WALT \
+    -e SCHED_TUNE \
     -e RING_BUFFER \
     -e TRACING \
     -e FTRACE
