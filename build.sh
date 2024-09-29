@@ -104,6 +104,9 @@ scripts/config --file out/.config \
     -e RING_BUFFER \
     -e TRACING \
     -e FTRACE
+else
+scripts/config --file out/.config \
+    -d MODULES
 fi
 
 if [[ "$2" == "oplus" ]]; then
