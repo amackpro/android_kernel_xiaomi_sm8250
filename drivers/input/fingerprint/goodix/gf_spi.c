@@ -334,10 +334,35 @@ static void nav_event_input(struct gf_dev *gf_dev, gf_nav_event_t nav_event)
 		input_sync(gf_dev->input);
 	}
 }
+static void gf_kernel_key_input(struct gf_dev *gf_dev, struct gf_key *gf_key)
+{
+	uint32_t key_input = 0;
+
+	if (GF_KEY_POWER == gf_key->key) {
+		key_input = GF_KEY_INPUT_POWER;
+	} else if (GF_KEY_CAMERA == gf_key->key) {
+		key_input = GF_KEY_INPUT_CAMERA;
+	} else {
+		/* add special key define */
+		key_input = gf_key->key;
+	}
+
+	pr_debug("%s: received key event[%d], key=%d, value=%d\n",
+		 __func__, key_input, gf_key->key, gf_key->value);
+
+	if ((GF_KEY_POWER == gf_key->key || GF_KEY_CAMERA == gf_key->key)
+		&& (gf_key->value == 1)) {
+		input_report_key(gf_dev->input, key_input, 1);
+		input_sync(gf_dev->input);
+		input_report_key(gf_dev->input, key_input, 0);
+		input_sync(gf_dev->input);
+	}
+}
 
 static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct gf_dev *gf_dev = &gf;
+	struct gf_key gf_key;
 #if defined(SUPPORT_NAV_EVENT)
 	gf_nav_event_t nav_event = GF_NAV_NONE;
 #endif
@@ -396,6 +421,15 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case GF_IOC_RESET:
 		pr_debug("%s GF_IOC_RESET.\n", __func__);
 		gf_hw_reset(gf_dev, 3);
+		break;
+
+	case GF_IOC_INPUT_KEY_EVENT:
+		if (copy_from_user(&gf_key, (struct gf_key *)arg, sizeof(struct gf_key))) {
+			pr_debug("Failed to copy input key event from user to kernel\n");
+			retval = -EFAULT;
+			break;
+		}
+		gf_kernel_key_input(gf_dev, &gf_key);
 		break;
 
 #if defined(SUPPORT_NAV_EVENT)
@@ -504,7 +538,7 @@ static irqreturn_t gf_irq(int irq, void *handle)
 	struct gf_dev *gf_dev = &gf;
 #if defined(GF_NETLINK_ENABLE)
 	char temp[4] = { 0x0 };
-	//uint32_t key_input = 0;
+	uint32_t key_input = 0;
 	temp[0] = GF_NET_EVENT_IRQ;
 	pr_debug("%s enter\n", __func__);
 	__pm_wakeup_event(fp_wakelock, WAKELOCK_HOLD_TIME);
@@ -512,11 +546,11 @@ static irqreturn_t gf_irq(int irq, void *handle)
 
 	if ((gf_dev->wait_finger_down == true) && (gf_dev->device_available == 1) &&
 		(gf_dev->fb_black == 1)) {
-		/*key_input = KEY_RIGHT;
+		key_input = KEY_RIGHT;
 		input_report_key(gf_dev->input, key_input, 1);
 		input_sync(gf_dev->input);
 		input_report_key(gf_dev->input, key_input, 0);
-		input_sync(gf_dev->input);*/
+		input_sync(gf_dev->input);
 		gf_dev->wait_finger_down = false;
 		schedule_work(&gf_dev->work);
 	}
@@ -612,7 +646,7 @@ static int gf_open(struct inode *inode, struct file *filp)
 
 		gpio_direction_input(gf_dev->irq_gpio);
 		rc = request_threaded_irq(gf_dev->irq, NULL, gf_irq,
-						IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+						IRQF_TRIGGER_RISING | IRQF_ONESHOT | IRQF_LITTLE_AFFINE,
 						"gf", gf_dev);
 
 		if (!rc) {
