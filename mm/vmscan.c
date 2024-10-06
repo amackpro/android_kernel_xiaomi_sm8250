@@ -178,9 +178,13 @@ int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
 #endif
 
 /*
- * From 0 .. 100.  Higher means more swappy.
+ * From 0 .. 200.  Higher means more swappy.
  */
-int vm_swappiness = 60;
+#ifdef CONFIG_OPLUS
+int vm_swappiness = 160;
+#else
+int vm_swappiness = 120;
+#endif
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
@@ -2402,7 +2406,6 @@ static void get_scan_count(struct lruvec *lruvec, struct mem_cgroup *memcg,
 	if (nandswap_si)
 		totalswap -= nandswap_si->pages;
 #endif
-
 
 	/* If we have no swap space, do not bother scanning anon pages. */
 	if (!sc->may_swap || mem_cgroup_get_nr_swap_pages(memcg) <= 0) {
