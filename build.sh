@@ -97,6 +97,7 @@ make -j${KEBABS} ${ARGS} vendor/"${DEVICE}"_defconfig
 if [[ $@ =~ pelt ]] && [[ $2 != miui ]]; then
 scripts/config --file out/.config \
 	-d SCHED_WALT \
+	-d CPU_FREQ_GOV_WALT \
 	-e CONFIG_PELT_COMPATIBILITY_LAYER
 fi
 
