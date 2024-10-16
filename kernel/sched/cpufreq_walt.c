@@ -56,7 +56,6 @@ struct waltgov_policy {
 	struct			mutex work_lock;
 	struct			kthread_worker worker;
 	struct task_struct	*thread;
-	bool			work_in_progress;
 
 	bool			limits_changed;
 	bool			need_freq_update;
@@ -130,24 +129,6 @@ static bool waltgov_should_update_freq(struct waltgov_policy *sg_policy, u64 tim
 	return delta_ns >= sg_policy->min_rate_limit_ns;
 }
 
-static inline bool use_pelt(void)
-{
-#ifdef CONFIG_SCHED_WALT
-	return false;
-#else
-	return true;
-#endif
-}
-
-static inline bool conservative_pl(void)
-{
-#ifdef CONFIG_SCHED_WALT
-	return sysctl_sched_conservative_pl;
-#else
-	return false;
-#endif
-}
-
 static bool waltgov_up_down_rate_limit(struct waltgov_policy *sg_policy, u64 time,
 				     unsigned int next_freq)
 {
@@ -198,10 +179,6 @@ static void waltgov_track_cycles(struct waltgov_policy *sg_policy,
 {
 	u64 delta_ns, cycles;
 	u64 next_ws = sg_policy->last_ws + sched_ravg_window;
-
-	if (use_pelt())
-		return;
-
 	upto = min(upto, next_ws);
 	/* Track cycles in current window */
 	delta_ns = upto - sg_policy->last_cyc_update_time;
@@ -217,9 +194,6 @@ static void waltgov_calc_avg_cap(struct waltgov_policy *sg_policy, u64 curr_ws,
 {
 	u64 last_ws = sg_policy->last_ws;
 	unsigned int avg_freq;
-
-	if (use_pelt())
-		return;
 
 	BUG_ON(curr_ws < last_ws);
 	if (curr_ws <= last_ws)
@@ -265,27 +239,8 @@ static void waltgov_fast_switch(struct waltgov_policy *sg_policy, u64 time,
 static void waltgov_deferred_update(struct waltgov_policy *sg_policy, u64 time,
 				  unsigned int next_freq)
 {
-	if (!waltgov_update_next_freq(sg_policy, time, next_freq))
-		return;
-
-	if (use_pelt())
-		sg_policy->work_in_progress = true;
 	irq_work_queue(&sg_policy->irq_work);
 }
-
-#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
-__weak unsigned int glk_freq_limit(struct cpufreq_policy *policy,
-		unsigned int *target_freq)
-{
-	return 0;
-}
-
-__weak unsigned long glk_cal_freq(struct cpufreq_policy *policy,
-		unsigned long util, unsigned long max)
-{
-	return 0;
-}
-#endif
 
 #define TARGET_LOAD 80
 /**
@@ -314,25 +269,15 @@ static unsigned int get_next_freq(struct waltgov_policy *sg_policy,
 				  unsigned long util, unsigned long max)
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
-#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
-	unsigned int walt_freq;
-#endif
 	unsigned int raw_freq;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
 
-#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
-	walt_freq = map_util_freq(util, freq, max);
-	freq = glk_cal_freq(policy, util, max);
-	if (!freq)
-		freq = glk_freq_limit(policy, &walt_freq);
-	else
-		sg_policy->need_freq_update = true;
-#else
 	freq = map_util_freq(util, freq, max);
-#endif
-	trace_waltgov_next_freq(policy->cpu, util, max, raw_freq, freq, policy->min, policy->max,
-				sg_policy->cached_raw_freq, sg_policy->need_freq_update);
+	trace_waltgov_next_freq(policy->cpu, util, max, raw_freq, freq,
+				policy->min,policy->max,
+				sg_policy->cached_raw_freq,
+				sg_policy->need_freq_update);
 
 	if (freq == sg_policy->cached_raw_freq && !sg_policy->need_freq_update)
 		return sg_policy->next_freq;
@@ -343,33 +288,18 @@ static unsigned int get_next_freq(struct waltgov_policy *sg_policy,
 	return cpufreq_driver_resolve_freq(policy, freq);
 }
 
-
-#ifdef CONFIG_SCHED_WALT
 static unsigned long waltgov_get_util(struct waltgov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
 	unsigned long max = arch_scale_cpu_capacity(NULL, sg_cpu->cpu);
+	unsigned long util;
 
 	sg_cpu->max = max;
 	sg_cpu->bw_dl = cpu_bw_dl(rq);
 
-	return stune_util(sg_cpu->cpu, 0, &sg_cpu->walt_load);
-}
-#else
-static unsigned long waltgov_get_util(struct waltgov_cpu *sg_cpu)
-{
-	struct rq *rq = cpu_rq(sg_cpu->cpu);
-
-	unsigned long util_cfs = cpu_util_cfs(rq);
-	unsigned long max = arch_scale_cpu_capacity(NULL, sg_cpu->cpu);
-
-	sg_cpu->max = max;
-	sg_cpu->bw_dl = cpu_bw_dl(rq);
-
-	util = cpu_util_freq_walt(wg_cpu->cpu, &wg_cpu->walt_load);
+	util = cpu_util_freq_walt(sg_cpu->cpu, &sg_cpu->walt_load);
 	return uclamp_rq_util_with(rq, util, NULL);
 }
-#endif
 
 
 static bool waltgov_iowait_reset(struct waltgov_cpu *sg_cpu, u64 time,
@@ -469,8 +399,9 @@ static inline bool waltgov_cpu_is_busy(struct waltgov_cpu *sg_cpu) { return fals
 #define NL_RATIO 75
 #define DEFAULT_HISPEED_LOAD 90
 #define DEFAULT_CPU0_RTG_BOOST_FREQ 1000000
-#define DEFAULT_CPU4_RTG_BOOST_FREQ 0
+#define DEFAULT_CPU4_RTG_BOOST_FREQ 768000
 #define DEFAULT_CPU7_RTG_BOOST_FREQ 0
+
 static void waltgov_walt_adjust(struct waltgov_cpu *sg_cpu, unsigned long *util,
 			      unsigned long *max)
 {
@@ -481,9 +412,6 @@ static void waltgov_walt_adjust(struct waltgov_cpu *sg_cpu, unsigned long *util,
 	unsigned long cpu_util = sg_cpu->util;
 	bool is_hiload;
 	unsigned long pl = sg_cpu->walt_load.pl;
-
-	if (use_pelt())
-		return;
 
 	if (is_rtg_boost)
 		*util = max(*util, sg_policy->rtg_boost_util);
@@ -499,7 +427,7 @@ static void waltgov_walt_adjust(struct waltgov_cpu *sg_cpu, unsigned long *util,
 		*util = *max;
 
 	if (sg_policy->tunables->pl) {
-		if (conservative_pl())
+		if (sysctl_sched_conservative_pl)
 			pl = mult_frac(pl, TARGET_LOAD, 100);
 		*util = max(*util, pl);
 	}
@@ -546,8 +474,7 @@ static void waltgov_update_single(struct update_util_data *hook, u64 time,
 		return;
 
 	/* Limits may have changed, don't skip frequency update */
-	busy = use_pelt() && !sg_policy->need_freq_update &&
-		waltgov_cpu_is_busy(sg_cpu);
+	busy = !sg_policy->need_freq_update && waltgov_cpu_is_busy(sg_cpu);
 
 	sg_cpu->util = util = waltgov_get_util(sg_cpu);
 	max = sg_cpu->max;
@@ -706,20 +633,8 @@ static void waltgov_work(struct kthread_work *work)
 	unsigned int freq;
 	unsigned long flags;
 
-	/*
-	 * Hold sg_policy->update_lock shortly to handle the case where:
-	 * incase sg_policy->next_freq is read here, and then updated by
-	 * waltgov_deferred_update() just before work_in_progress is set to false
-	 * here, we may miss queueing the new update.
-	 *
-	 * Note: If a work was queued after the update_lock is released,
-	 * waltgov_work() will just be called again by kthread_work code; and the
-	 * request will be proceed before the waltgov thread sleeps.
-	 */
 	raw_spin_lock_irqsave(&sg_policy->update_lock, flags);
 	freq = sg_policy->next_freq;
-	if (use_pelt())
-		sg_policy->work_in_progress = false;
 	waltgov_track_cycles(sg_policy, sg_policy->policy->cur,
 			   ktime_get_ns());
 	raw_spin_unlock_irqrestore(&sg_policy->update_lock, flags);
@@ -1076,6 +991,7 @@ static void waltgov_tunables_restore(struct cpufreq_policy *policy)
 	tunables->down_rate_limit_us = cached->down_rate_limit_us;
 }
 
+bool waltgov_disabled = true;
 static int waltgov_init(struct cpufreq_policy *policy)
 {
 	struct waltgov_policy *sg_policy;
@@ -1119,8 +1035,6 @@ static int waltgov_init(struct cpufreq_policy *policy)
 		goto stop_kthread;
 	}
 
-	tunables->up_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
-	tunables->down_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
 	tunables->hispeed_load = DEFAULT_HISPEED_LOAD;
 	tunables->hispeed_freq = 0;
 
@@ -1210,18 +1124,17 @@ static int waltgov_start(struct cpufreq_policy *policy)
 	update_min_rate_limit_ns(sg_policy);
 	sg_policy->last_freq_update_time	= 0;
 	sg_policy->next_freq			= 0;
-	sg_policy->work_in_progress		= false;
 	sg_policy->limits_changed		= false;
 	sg_policy->need_freq_update		= false;
 	sg_policy->cached_raw_freq		= 0;
-	sg_policy->prev_cached_raw_freq		= 0;
+	sg_policy->prev_cached_raw_freq	= 0;
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct waltgov_cpu *sg_cpu = &per_cpu(waltgov_cpu, cpu);
 
 		memset(sg_cpu, 0, sizeof(*sg_cpu));
 		sg_cpu->cpu			= cpu;
-		sg_cpu->sg_policy		= sg_policy;
+		sg_cpu->sg_policy	= sg_policy;
 		sg_cpu->min			=
 			(SCHED_CAPACITY_SCALE * policy->cpuinfo.min_freq) /
 			policy->cpuinfo.max_freq;
@@ -1235,6 +1148,8 @@ static int waltgov_start(struct cpufreq_policy *policy)
 							waltgov_update_shared :
 							waltgov_update_single);
 	}
+
+	waltgov_disabled = false;
 	return 0;
 }
 
@@ -1252,6 +1167,7 @@ static void waltgov_stop(struct cpufreq_policy *policy)
 		irq_work_sync(&sg_policy->irq_work);
 		kthread_cancel_work_sync(&sg_policy->work);
 	}
+	waltgov_disabled = true;
 }
 
 static void waltgov_limits(struct cpufreq_policy *policy)
