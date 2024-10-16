@@ -93,11 +93,19 @@ echo "------ Starting Compilation ------"
 # Make defconfig
 make -j${KEBABS} ${ARGS} vendor/"${DEVICE}"_defconfig
 
+#dont build pelt for miui
+if [[ $@ =~ pelt ]] && [[ $2 != miui ]]; then
+scripts/config --file out/.config \
+	-d SCHED_WALT \
+	-e CONFIG_PELT_COMPATIBILITY_LAYER
+fi
+
 if [[ "$2" == "miui" ]]; then
 echo " -------MIUI optimization initialized-------"
 scripts/config --file out/.config \
     --set-str STATIC_USERMODEHELPER_PATH /system/bin/micd \
     -e MIHW \
+    -d UCLAMP_TASK \
     -e RING_BUFFER \
     -e TRACING \
     -e FTRACE
