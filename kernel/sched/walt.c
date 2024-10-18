@@ -99,7 +99,13 @@ __read_mostly unsigned int sysctl_sched_cpu_high_irqload = TICK_NSEC;
 unsigned int sysctl_sched_walt_rotate_big_tasks;
 unsigned int walt_rotation_enabled;
 
+#ifdef CONFIG_SCHED_WALT_COBUCK
+__read_mostly unsigned int sysctl_sched_asym_cap_sibling_freq_match_pct = 75;
+__read_mostly unsigned int sysctl_sched_asym_cap_sibling_freq_match_en = 1;
+cpumask_t asym_freq_match_cpus = CPU_MASK_NONE;
+#else
 __read_mostly unsigned int sysctl_sched_asym_cap_sibling_freq_match_pct = 100;
+#endif
 __read_mostly unsigned int sched_ravg_hist_size = 5;
 
 static __read_mostly unsigned int sched_io_is_busy = 1;
@@ -601,23 +607,52 @@ __cpu_util_freq_walt(int cpu, struct sched_walt_cpu_load *walt_load)
 unsigned long
 cpu_util_freq_walt(int cpu, struct sched_walt_cpu_load *walt_load)
 {
+#ifdef CONFIG_SCHED_WALT_COBUCK
+	static unsigned long util_other;
+	static struct sched_walt_cpu_load wl_other;
+	unsigned long util = 0;
+	int mpct = sysctl_sched_asym_cap_sibling_freq_match_pct;
+	int max_cap_cpu;
+#else
 	struct sched_walt_cpu_load wl_other = {0};
 	unsigned long util = 0, util_other = 0;
-	unsigned long capacity = capacity_orig_of(cpu);
 	int i, mpct = sysctl_sched_asym_cap_sibling_freq_match_pct;
-
+#endif
+	unsigned long capacity = capacity_orig_of(cpu);
+#ifdef CONFIG_SCHED_WALT_COBUCK
+	if (!cpumask_test_cpu(cpu, &asym_freq_match_cpus) ||
+		!sysctl_sched_asym_cap_sibling_freq_match_en)
+#else
 	if (!cpumask_test_cpu(cpu, &asym_cap_sibling_cpus))
+#endif
 		return __cpu_util_freq_walt(cpu, walt_load);
 
+#ifndef CONFIG_SCHED_WALT_COBUCK
 	for_each_cpu(i, &asym_cap_sibling_cpus) {
 		if (i == cpu)
 			util = __cpu_util_freq_walt(cpu, walt_load);
 		else
 			util_other = __cpu_util_freq_walt(i, &wl_other);
 	}
+#endif
 
+#ifdef CONFIG_SCHED_WALT_COBUCK
+	/* FIXME: Prime always last cpu */
+	max_cap_cpu = cpumask_last(&asym_freq_match_cpus);
+	util = __cpu_util_freq_walt(cpu, walt_load);
+
+	if (cpu != max_cap_cpu) {
+		if (cpumask_first(&asym_freq_match_cpus) == cpu)
+			util_other = __cpu_util_freq_walt(max_cap_cpu, &wl_other);
+		else
+			goto out;
+	} else {
+		mpct = 100;
+	}
+#else
 	if (cpu == cpumask_last(&asym_cap_sibling_cpus))
 		mpct = 100;
+#endif
 
 	util = ADJUSTED_ASYM_CAP_CPU_UTIL(util, util_other, mpct);
 
@@ -625,6 +660,23 @@ cpu_util_freq_walt(int cpu, struct sched_walt_cpu_load *walt_load)
 						   mpct);
 	walt_load->pl = ADJUSTED_ASYM_CAP_CPU_UTIL(walt_load->pl, wl_other.pl,
 						   mpct);
+
+#ifdef CONFIG_SCHED_WALT_COBUCK
+out:
+	if (cpu != max_cap_cpu) {
+		if (util > util_other) {
+			util_other = util;
+			wl_other.nl = walt_load->nl;
+		}
+
+		if (wl_other.pl < walt_load->pl)
+			wl_other.pl = walt_load->pl;
+
+	} else {
+		util_other = 0;
+		memset(&wl_other, 0, sizeof(wl_other));
+	}
+#endif
 
 	return (util >= capacity) ? capacity : util;
 }
@@ -2228,7 +2280,7 @@ void init_new_task_load(struct task_struct *p)
 
 void reset_task_stats(struct task_struct *p)
 {
-	u32 sum;
+	u32 sum = 0;
 	u32 curr_window_saved[CONFIG_NR_CPUS];
 	u32 prev_window_saved[CONFIG_NR_CPUS];
 
@@ -3397,6 +3449,14 @@ void walt_irq_work(struct irq_work *irq_work)
 	int level = 0;
 	unsigned long flags;
 
+#ifdef CONFIG_SCHED_WALT_COBUCK
+	struct cpumask freq_match_cpus;
+
+	if (sysctl_sched_asym_cap_sibling_freq_match_en)
+		cpumask_copy(&freq_match_cpus, &asym_freq_match_cpus);
+	else
+		cpumask_copy(&freq_match_cpus, &asym_cap_sibling_cpus);
+#endif
 	/* Am I the window rollover work or the migration work? */
 	if (irq_work == &walt_migration_irq_work)
 		is_migration = true;
@@ -3424,8 +3484,13 @@ void walt_irq_work(struct irq_work *irq_work)
 				account_load_subtractions(rq);
 				aggr_grp_load += rq->grp_time.prev_runnable_sum;
 			}
+#ifdef CONFIG_SCHED_WALT_COBUCK
+			if (is_migration && rq->notif_pending &&
+			    cpumask_test_cpu(cpu, &freq_match_cpus)) {
+#else
 			if (is_migration && rq->notif_pending &&
 			    cpumask_test_cpu(cpu, &asym_cap_sibling_cpus)) {
+#endif
 				is_asym_migration = true;
 				rq->notif_pending = false;
 			}
@@ -3440,11 +3505,19 @@ void walt_irq_work(struct irq_work *irq_work)
 	}
 
 	if (total_grp_load) {
+#ifdef CONFIG_SCHED_WALT_COBUCK
+		if (cpumask_weight(&freq_match_cpus)) {
+#else
 		if (cpumask_weight(&asym_cap_sibling_cpus)) {
+#endif
 			u64 big_grp_load =
 					  total_grp_load - min_cluster_grp_load;
 
+#ifdef CONFIG_SCHED_WALT_COBUCK
+			for_each_cpu(cpu, &freq_match_cpus)
+#else
 			for_each_cpu(cpu, &asym_cap_sibling_cpus)
+#endif
 				cpu_cluster(cpu)->aggr_grp_load = big_grp_load;
 		}
 		rtgb_active = is_rtgb_active();
@@ -3475,8 +3548,13 @@ void walt_irq_work(struct irq_work *irq_work)
 				}
 			}
 
+#ifdef CONFIG_SCHED_WALT_COBUCK
+			if (is_asym_migration && cpumask_test_cpu(cpu,
+							&freq_match_cpus))
+#else
 			if (is_asym_migration && cpumask_test_cpu(cpu,
 							&asym_cap_sibling_cpus))
+#endif
 				flag |= SCHED_CPUFREQ_INTERCLUSTER_MIG;
 #if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 

@@ -519,6 +519,17 @@ static struct ctl_table kern_table[] = {
 		.extra1         = &one,
 		.extra2         = &one_hundred,
 	},
+#ifdef CONFIG_SCHED_WALT_COBUCK
+	{
+		.procname	= "sched_asym_cap_sibling_freq_match_enable",
+		.data		= &sysctl_sched_asym_cap_sibling_freq_match_en,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &one,
+	},
+#endif
 	{
 		.procname	= "sched_coloc_downmigrate_ns",
 		.data		= &sysctl_sched_coloc_downmigrate_ns,
@@ -1713,7 +1724,7 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= overcommit_kbytes_handler,
 	},
 	{
-		.procname	= "page-cluster", 
+		.procname	= "page-cluster",
 		.data		= &page_cluster,
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
