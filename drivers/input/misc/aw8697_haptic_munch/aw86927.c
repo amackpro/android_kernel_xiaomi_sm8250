@@ -4504,9 +4504,9 @@ int aw86927_haptics_upload_effect(struct input_dev *dev,
 				__func__, aw86927->effect_id,
 				aw86927->activate_mode);
 			/*second data*/
-			data[1] = aw86927->info.rtp_time[aw86927->effect_id]/1000;
+			data[1] = 30;
 			/*millisecond data*/
-			data[2] = aw86927->info.rtp_time[aw86927->effect_id];
+			data[2] = 0;
 		}
 		if (aw86927->effect_id == CUSTOME_WAVE_ID) {
 			aw86927->activate_mode = AW86927_ACTIVATE_RTP_MODE;
@@ -4514,9 +4514,9 @@ int aw86927_haptics_upload_effect(struct input_dev *dev,
 				__func__, aw86927->effect_id,
 				aw86927->activate_mode);
 			/*second data*/
-			data[1] = aw86927->info.rtp_time[aw86927->effect_id]/1000;
+			data[1] = 30;
 			/*millisecond data*/
-			data[2] = aw86927->info.rtp_time[aw86927->effect_id];
+			data[2] = 0;
 			aw86927->is_custom_wave = 1;
 			rb_init();
 		}
